@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Filter, AlertCircle, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../api';
 import * as XLSX from 'xlsx';
 

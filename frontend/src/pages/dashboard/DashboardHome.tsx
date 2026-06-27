@@ -117,8 +117,8 @@ export default function DashboardHome() {
                              contentStyle={{ background: '#0a0a1a', border: '1px solid #ffffff10', borderRadius: '15px' }}
                              itemStyle={{ color: '#6366f1', fontWeight: 'bold' }}
                           />
-                          <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]}>
-                             {verticalStats.map((entry, index) => (
+                           <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]}>
+                             {verticalStats.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />
                              ))}
                           </Bar>
