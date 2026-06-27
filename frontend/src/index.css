@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* THEME SYSTEM CORE */
+:root {
+  --color-primary: #4F46E5;
+  --color-secondary: #0ea5e9;
+  --color-danger: #e11d48;
+}
+
+/* ⚪️ LIGHT MODE - FULL OVERRIDE */
+.light, :root {
+  --bg-main: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-hover: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+}
+
+/* ⚫️ DARK MODE - FULL OVERRIDE */
+.dark {
+  --bg-main: #020617;
+  --bg-surface: #0f172a;
+  --bg-hover: #1e293b;
+  --border-color: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+/* FORCE COLORS REGARDLESS OF TAILWIND */
+html, body {
+  background-color: var(--bg-main) !important;
+  color: var(--text-main) !important;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+/* APPLY TO ALL SURFACE ELEMENTS */
+.light .bg-surface, 
+.light [class*="bg-surface"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light .bg-background,
+.light [class*="bg-background"] {
+  background-color: #f1f5f9 !important;
+}
+
+.light .text-white,
+.light h1, .light h2, .light h3, .light h4 {
+  color: #0f172a !important;
+}
+
+.light .text-gray-400, 
+.light .text-gray-500 {
+  color: #64748b !important;
+}
+
+.light .border-border,
+.light .border-white\/5,
+.light .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* DARK MODE RE-ENFORCEMENT */
+.dark .bg-surface {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .bg-background {
+  background-color: #020617 !important;
+}
+
+/* Scrollbar tweaks */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }

@@ -1,0 +1,37 @@
+import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { protect } from '../middleware/authMiddleware';
+import { uploadAttachment, getAttachments, deleteAttachment } from '../controllers/attachmentController';
+
+const router = Router();
+
+// Configure Multer Storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, '../../uploads');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+// LIMITS: Set 10MB Max File Size
+const upload = multer({ 
+    storage, 
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB in bytes
+    }
+});
+
+router.post('/upload', protect, upload.single('file'), uploadAttachment);
+router.get('/:task_id', protect, getAttachments);
+router.delete('/:id', protect, deleteAttachment);
+
+export default router;
