@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Building2, Trash2, Edit3, X, Check, Loader2 } from 'lucide-react';
+import { Plus, Building2, Trash2, Edit3, X, Check } from 'lucide-react';
 import api from '../../api';
 
 export default function VerticalsPage() {
@@ -94,7 +94,7 @@ export default function VerticalsPage() {
                   <div key={v.id} className="bg-surface border border-border p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] hover:border-primary/20 transition-all group relative overflow-hidden shadow-2xl min-h-[160px] md:h-48 flex flex-col justify-between">
                       <div className="flex justify-between items-start">
                           <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl bg-primary/5 text-primary`}>
-                              <Building2 size={20} md:size={24} />
+                              <Building2 className="size-5 md:size-6" />
                           </div>
                           <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                               <button onClick={() => { setEditingId(v.id); setEditValue(v.name); }} className="p-2.5 text-gray-500 hover:text-primary dark:hover:text-white hover:bg-primary/5 rounded-xl transition-all"><Edit3 size={16}/></button>

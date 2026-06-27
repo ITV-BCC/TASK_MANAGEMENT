@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, Users, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../api';
 
 const ROLES = ['ADMIN', 'CO_ADMIN', 'EMPLOYEE'];

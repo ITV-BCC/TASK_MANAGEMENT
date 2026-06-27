@@ -33,7 +33,6 @@ export default function TasksPage() {
   const [newComment, setNewComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [assignModal, setAssignModal] = useState<{ open: boolean; task: any | null }>({ open: false, task: null });
-  const [filters, setFilters] = useState({ status: '', priority: '', vertical: '' });
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_id: '' });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -269,14 +268,14 @@ export default function TasksPage() {
                         <button onClick={() => setAssignModal({ open: true, task })} className="w-full h-12 md:h-14 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3"><UserPlus size={18}/> Assign Direct</button>
                     )}
                     {user.role === 'EMPLOYEE' && (task.status === 'ASSIGNED' || task.status === 'REWORK') && (
-                        <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'IN_PROGRESS' }).then(safeFetch)} className="w-full h-12 md:h-14 bg-yellow-400 text-black rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-yellow-300 transition-all shadow-xl shadow-yellow-400/20">Initiate Workflow</button>
+                        <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'IN_PROGRESS' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-yellow-400 text-black rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-yellow-300 transition-all shadow-xl shadow-yellow-400/20">Initiate Workflow</button>
                     )}
                     {user.role === 'EMPLOYEE' && task.status === 'IN_PROGRESS' && (
-                        <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'COMPLETED' }).then(safeFetch)} className="w-full h-12 md:h-14 bg-secondary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary/80 transition-all shadow-xl shadow-secondary/20">Finalize Work</button>
+                        <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'COMPLETED' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-secondary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary/80 transition-all shadow-xl shadow-secondary/20">Finalize Work</button>
                     )}
                     {user.role !== 'EMPLOYEE' && task.status === 'COMPLETED' && (
                         <div className="flex flex-col gap-2">
-                             <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'REVIEWED' }).then(safeFetch)} className="h-12 bg-secondary/10 border border-secondary/30 text-secondary rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary hover:text-white transition-all flex items-center justify-center gap-3"><CheckCircle size={18}/> Approve Asset</button>
+                             <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'REVIEWED' }).then(() => safeFetch())} className="h-12 bg-secondary/10 border border-secondary/30 text-secondary rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary hover:text-white transition-all flex items-center justify-center gap-3"><CheckCircle size={18}/> Approve Asset</button>
                              <button onClick={() => setReworkModal({ open: true, task, reason: '' })} className="h-12 bg-danger/10 border border-danger/30 text-danger rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-danger hover:text-white transition-all flex items-center justify-center gap-3"><RotateCcw size={18}/> Request Rework</button>
                         </div>
                     )}
