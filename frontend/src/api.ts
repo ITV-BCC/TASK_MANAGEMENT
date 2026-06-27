@@ -1,12 +1,16 @@
 import axios from 'axios';
 
-// Create a central connection pipe exactly matching our Backend server port!
+// SMART BASE URL:
+// 1. First, check if Vercel set an environment variable
+// 2. If not, use the Render production URL
+// 3. If running locally, use localhost
+const baseURL = import.meta.env.VITE_API_URL || 'https://task-management-f0f0.onrender.com/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: baseURL,
 });
 
 // Automatic Security System
-// Intercepts every single outgoing request and attaches the User's JWT token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token && config.headers) {
