@@ -73,8 +73,19 @@ export default function TasksPage() {
   const handleAssignTask = async (userId: string) => {
     if (!assignModal.task) return;
     try {
-      await api.post('/tasks/assign', { employee_id: userId, task_id: assignModal.task.id });
-      setAssignModal({ open: false, task: null });
+      const res = await api.post('/tasks/assign', { employee_id: userId, task_id: assignModal.task.id });
+      const isAssigned = res.data.assigned;
+      let newAssigned = [...(assignModal.task.assigned_users || [])];
+      if (isAssigned) {
+        const emp = users.find(u => u.id === userId);
+        if (emp) newAssigned.push({ id: emp.id, first_name: emp.first_name, last_name: emp.last_name });
+      } else {
+        newAssigned = newAssigned.filter(u => u.id !== userId);
+      }
+      setAssignModal({
+        ...assignModal,
+        task: { ...assignModal.task, assigned_users: newAssigned }
+      });
       safeFetch();
     } catch (err) { console.error(err); }
   };
@@ -227,7 +238,7 @@ export default function TasksPage() {
                             
                             {/* Metadata Row */}
                             <div className="flex flex-wrap items-center gap-y-2 gap-x-6 mt-4">
-                                 <div className="flex items-center gap-1.5">
+                                 <div className="flex items-center gap-1.5 font-bold">
                                     <Target size={12} className="text-gray-600" />
                                     <span className="text-[10px] text-gray-500 font-black uppercase">{task.vertical_name || 'System Wide'}</span>
                                  </div>
@@ -235,6 +246,20 @@ export default function TasksPage() {
                                     <div className="flex items-center gap-1.5">
                                         <Calendar size={12} className="text-gray-600" />
                                         <span className="text-[10px] text-gray-500 font-black uppercase">Due {new Date(task.due_date).toLocaleDateString()}</span>
+                                    </div>
+                                 )}
+                                 {task.assigned_users && task.assigned_users.length > 0 && (
+                                    <div className="flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
+                                        <div className="flex -space-x-1.5 overflow-hidden mr-1">
+                                            {task.assigned_users.map((u: any) => (
+                                                <div key={u.id} className="w-5 h-5 rounded-full bg-primary/20 text-primary border border-surface flex items-center justify-center text-[8px] font-black uppercase" title={`${u.first_name} ${u.last_name || ''}`}>
+                                                    {u.first_name[0]}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <span className="text-[9px] text-primary/80 font-black uppercase tracking-wider">
+                                            Assigned: {task.assigned_users.map((u: any) => u.first_name).join(', ')}
+                                        </span>
                                     </div>
                                  )}
                             </div>
@@ -264,8 +289,8 @@ export default function TasksPage() {
 
                 {/* Operations Section */}
                 <div className="md:w-64 flex flex-col justify-center gap-3">
-                    {user.role !== 'EMPLOYEE' && task.status === 'CREATED' && (
-                        <button onClick={() => setAssignModal({ open: true, task })} className="w-full h-12 md:h-14 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3"><UserPlus size={18}/> Assign Direct</button>
+                    {user.role !== 'EMPLOYEE' && (
+                        <button onClick={() => setAssignModal({ open: true, task })} className="w-full h-12 md:h-14 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3"><UserPlus size={18}/> {task.status === 'CREATED' ? 'Assign Direct' : 'Reassign / Edit'}</button>
                     )}
                     {user.role === 'EMPLOYEE' && (task.status === 'ASSIGNED' || task.status === 'REWORK') && (
                         <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'IN_PROGRESS' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-yellow-400 text-black rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-yellow-300 transition-all shadow-xl shadow-yellow-400/20">Initiate Workflow</button>
@@ -353,18 +378,23 @@ export default function TasksPage() {
                     <button onClick={() => setAssignModal({ open: false, task: null })} className="text-gray-500 hover:text-white"><X size={20}/></button>
                 </div>
                 <div className="space-y-2 md:space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                    {users.filter(u => u.role === 'EMPLOYEE' && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => (
-                        <button key={emp.id} onClick={() => handleAssignTask(emp.id)} className="w-full p-4 md:p-5 bg-background border border-border rounded-xl md:rounded-2xl flex items-center justify-between hover:border-primary transition-all group">
-                             <div className="flex items-center gap-3 md:gap-4">
-                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">{emp.first_name[0]}</div>
-                                <div className="text-left">
-                                    <p className="text-white font-bold text-xs md:text-sm">{emp.first_name} {emp.last_name}</p>
-                                    <p className="text-[8px] md:text-[10px] text-gray-600 uppercase font-black">{emp.vertical_name || 'System'}</p>
-                                </div>
-                             </div>
-                             <div className="text-primary"><Plus size={18}/></div>
-                        </button>
-                    ))}
+                    {users.filter(u => u.role === 'EMPLOYEE' && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => {
+                        const isAssigned = assignModal.task?.assigned_users?.some((u: any) => u.id === emp.id);
+                        return (
+                            <button key={emp.id} onClick={() => handleAssignTask(emp.id)} className={`w-full p-4 md:p-5 bg-background border rounded-xl md:rounded-2xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
+                                 <div className="flex items-center gap-3 md:gap-4">
+                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center font-bold text-xs ${isAssigned ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>{emp.first_name[0]}</div>
+                                    <div className="text-left">
+                                        <p className="text-white font-bold text-xs md:text-sm">{emp.first_name} {emp.last_name}</p>
+                                        <p className="text-[8px] md:text-[10px] text-gray-600 uppercase font-black">{emp.vertical_name || 'System'}</p>
+                                    </div>
+                                 </div>
+                                 <div className={isAssigned ? 'text-secondary' : 'text-primary'}>
+                                     {isAssigned ? <CheckCircle size={18}/> : <Plus size={18}/>}
+                                 </div>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </div>
