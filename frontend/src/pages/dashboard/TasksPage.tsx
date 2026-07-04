@@ -24,6 +24,9 @@ export default function TasksPage() {
   const [fetching, setFetching] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 });
   const [search, setSearch] = useState('');
+  const [filtStatus, setFiltStatus] = useState('ALL');
+  const [filtPriority, setFiltPriority] = useState('ALL');
+  const [sortBy, setSortBy] = useState('newest');
   
   const [historyModal, setHistoryModal] = useState<{ open: boolean; task: any | null; data: any[] }>({ open: false, task: null, data: [] });
   const [reworkModal, setReworkModal] = useState<{ open: boolean; task: any | null; reason: string }>({ open: false, task: null, reason: '' });
@@ -42,7 +45,7 @@ export default function TasksPage() {
     setFetching(true);
     try {
       const [tRes, vRes, uRes] = await Promise.all([
-        api.get(`/tasks?page=${page}&limit=${pagination.limit}&search=${search}`).catch(() => ({ data: { tasks: [] } })),
+        api.get(`/tasks?page=${page}&limit=${pagination.limit}&search=${search}&status=${filtStatus}&priority=${filtPriority}&sortBy=${sortBy}`).catch(() => ({ data: { tasks: [] } })),
         api.get('/verticals').catch(() => ({ data: { verticals: [] } })),
         api.get('/users?limit=1000').catch(() => ({ data: { users: [] } }))
       ]);
@@ -56,7 +59,7 @@ export default function TasksPage() {
   useEffect(() => { 
     const timer = setTimeout(() => { safeFetch(1); }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, filtStatus, filtPriority, sortBy]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatModal.data]);
 
@@ -194,20 +197,61 @@ export default function TasksPage() {
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
-          <div className="flex bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl gap-2 items-center w-full lg:w-auto lg:flex-1 lg:max-w-xl">
-              <Search size={16} className="text-gray-600 ml-3" />
-              <input 
-                type="text" 
-                placeholder="Search Objectives..." 
-                className="bg-transparent border-none text-[10px] md:text-xs text-white px-3 py-2 outline-none flex-1"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8">
+          {/* Left search & filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 lg:max-w-4xl">
+              <div className="flex bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl gap-2 items-center flex-1">
+                  <Search size={16} className="text-gray-600 ml-3" />
+                  <input 
+                    type="text" 
+                    placeholder="Search Objectives..." 
+                    className="bg-transparent border-none text-[10px] md:text-xs text-white px-3 py-2 outline-none flex-1"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                  <select 
+                    value={filtStatus} 
+                    onChange={e => setFiltStatus(e.target.value)} 
+                    className="bg-surface border border-border text-[9px] md:text-[10px] text-gray-400 px-4 py-3 rounded-xl md:rounded-2xl font-black uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer min-w-[120px]"
+                  >
+                     <option value="ALL">All Statuses</option>
+                     <option value="CREATED">Created</option>
+                     <option value="ASSIGNED">Assigned</option>
+                     <option value="IN_PROGRESS">In Progress</option>
+                     <option value="COMPLETED">Completed</option>
+                     <option value="REVIEWED">Reviewed</option>
+                     <option value="REWORK">Rework</option>
+                  </select>
+
+                  <select 
+                    value={filtPriority} 
+                    onChange={e => setFiltPriority(e.target.value)} 
+                    className="bg-surface border border-border text-[9px] md:text-[10px] text-gray-400 px-4 py-3 rounded-xl md:rounded-2xl font-black uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer min-w-[125px]"
+                  >
+                     <option value="ALL">All Priorities</option>
+                     <option value="HIGH">High Criticality</option>
+                     <option value="MEDIUM">Standard</option>
+                     <option value="LOW">Flexible</option>
+                  </select>
+
+                  <select 
+                    value={sortBy} 
+                    onChange={e => setSortBy(e.target.value)} 
+                    className="bg-surface border border-border text-[9px] md:text-[10px] text-gray-400 px-4 py-3 rounded-xl md:rounded-2xl font-black uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer min-w-[115px]"
+                  >
+                     <option value="newest">Newest First</option>
+                     <option value="oldest">Oldest First</option>
+                     <option value="due_date">Due Date</option>
+                     <option value="priority">Priority</option>
+                  </select>
+              </div>
           </div>
 
           {/* Mini Pagination */}
-          <div className="flex items-center gap-3 bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl w-full sm:w-auto justify-center">
+          <div className="flex items-center gap-3 bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl self-center sm:self-auto justify-center">
              <button onClick={() => safeFetch(pagination.page - 1)} disabled={pagination.page <= 1} className="p-2 text-gray-500 hover:text-white disabled:opacity-30"><ChevronLeft size={18}/></button>
              <span className="text-[10px] font-black text-gray-400 px-2 uppercase tracking-widest">Page {pagination.page} / {pagination.pages}</span>
              <button onClick={() => safeFetch(pagination.page + 1)} disabled={pagination.page >= pagination.pages} className="p-2 text-gray-500 hover:text-white disabled:opacity-30"><ChevronRight size={18}/></button>

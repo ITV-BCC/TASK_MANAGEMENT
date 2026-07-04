@@ -133,95 +133,109 @@ export const updateTaskStatus = async (req: AuthRequest, res: Response): Promise
 // ==========================================
 export const getTasks = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { page = 1, limit = 10, search = '' } = req.query;
+        const { page = 1, limit = 10, search = '', status = '', priority = '', sortBy = 'newest' } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
         const searchPattern = `%${search}%`;
 
-        let query = '';
-        let countQuery = '';
-        let params: any[] = [];
-        let countParams: any[] = [];
+        let selectFields = `
+            t.*, v.name as vertical_name,
+            COALESCE(sub_assign.assigned_users, '[]'::json) as assigned_users
+        `;
 
+        let fromClause = `
+            tasks t
+            LEFT JOIN verticals v ON t.vertical_id = v.id
+            LEFT JOIN (
+                SELECT ta.task_id, 
+                       JSON_AGG(JSON_BUILD_OBJECT('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as assigned_users
+                FROM task_assignments ta
+                JOIN users u ON ta.employee_id = u.id
+                GROUP BY ta.task_id
+            ) sub_assign ON t.id = sub_assign.task_id
+        `;
+
+        let whereClauses: string[] = [];
+        let params: any[] = [];
+
+        // 1. Role-based scoping
         if (req.user?.role === 'EMPLOYEE') {
-            query = `
-                SELECT t.*, v.name as vertical_name,
-                       COALESCE(sub_assign.assigned_users, '[]'::json) as assigned_users
-                FROM tasks t
-                JOIN task_assignments ta ON t.id = ta.task_id
-                LEFT JOIN verticals v ON t.vertical_id = v.id
-                LEFT JOIN (
-                    SELECT ta.task_id, 
-                           JSON_AGG(JSON_BUILD_OBJECT('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as assigned_users
-                    FROM task_assignments ta
-                    JOIN users u ON ta.employee_id = u.id
-                    GROUP BY ta.task_id
-                ) sub_assign ON t.id = sub_assign.task_id
-                WHERE ta.employee_id = $1 AND (t.title ILIKE $2 OR t.description ILIKE $2)
-                ORDER BY t.due_date ASC
-                LIMIT $3 OFFSET $4
-            `;
-            countQuery = `
-                SELECT COUNT(*) FROM tasks t 
-                JOIN task_assignments ta ON t.id = ta.task_id 
-                WHERE ta.employee_id = $1 AND (t.title ILIKE $2 OR t.description ILIKE $2)
-            `;
-            params = [req.user.id, searchPattern, limit, offset];
-            countParams = [req.user.id, searchPattern];
-        } else if (req.user?.role === 'GLOBAL_ADMIN') {
-            query = `
-                SELECT t.*, v.name as vertical_name,
-                       COALESCE(sub_assign.assigned_users, '[]'::json) as assigned_users
-                FROM tasks t
-                LEFT JOIN verticals v ON t.vertical_id = v.id
-                LEFT JOIN (
-                    SELECT ta.task_id, 
-                           JSON_AGG(JSON_BUILD_OBJECT('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as assigned_users
-                    FROM task_assignments ta
-                    JOIN users u ON ta.employee_id = u.id
-                    GROUP BY ta.task_id
-                ) sub_assign ON t.id = sub_assign.task_id
-                WHERE (t.title ILIKE $1 OR t.description ILIKE $1)
-                ORDER BY t.created_at DESC
-                LIMIT $2 OFFSET $3
-            `;
-            countQuery = `SELECT COUNT(*) FROM tasks WHERE (title ILIKE $1 OR description ILIKE $1)`;
-            params = [searchPattern, limit, offset];
-            countParams = [searchPattern];
-        } else {
-            query = `
-                SELECT t.*, v.name as vertical_name,
-                       COALESCE(sub_assign.assigned_users, '[]'::json) as assigned_users
-                FROM tasks t
-                LEFT JOIN verticals v ON t.vertical_id = v.id
-                LEFT JOIN (
-                    SELECT ta.task_id, 
-                           JSON_AGG(JSON_BUILD_OBJECT('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as assigned_users
-                    FROM task_assignments ta
-                    JOIN users u ON ta.employee_id = u.id
-                    GROUP BY ta.task_id
-                ) sub_assign ON t.id = sub_assign.task_id
-                WHERE t.vertical_id = $1 AND (t.title ILIKE $2 OR t.description ILIKE $2)
-                ORDER BY t.created_at DESC
-                LIMIT $3 OFFSET $4
-            `;
-            countQuery = `SELECT COUNT(*) FROM tasks WHERE vertical_id = $1 AND (title ILIKE $2 OR description ILIKE $2)`;
-            params = [req.user?.vertical_id, searchPattern, limit, offset];
-            countParams = [req.user?.vertical_id, searchPattern];
+            fromClause += ` JOIN task_assignments ta ON t.id = ta.task_id`;
+            params.push(req.user.id);
+            whereClauses.push(`ta.employee_id = $${params.length}`);
+        } else if (req.user?.role !== 'GLOBAL_ADMIN') {
+            params.push(req.user?.vertical_id);
+            whereClauses.push(`t.vertical_id = $${params.length}`);
         }
 
+        // 2. Search filter
+        params.push(searchPattern);
+        whereClauses.push(`(t.title ILIKE $${params.length} OR t.description ILIKE $${params.length})`);
+
+        // 3. Status filter
+        if (status && status !== 'ALL') {
+            params.push(status);
+            whereClauses.push(`t.status = $${params.length}`);
+        }
+
+        // 4. Priority filter
+        if (priority && priority !== 'ALL') {
+            params.push(priority);
+            whereClauses.push(`t.priority = $${params.length}`);
+        }
+
+        const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // 5. Sorting
+        let orderClause = 'ORDER BY t.created_at DESC';
+        if (sortBy === 'due_date') {
+            orderClause = 'ORDER BY t.due_date ASC NULLS LAST';
+        } else if (sortBy === 'priority') {
+            orderClause = `
+                ORDER BY 
+                    CASE t.priority 
+                        WHEN 'HIGH' THEN 1 
+                        WHEN 'MEDIUM' THEN 2 
+                        WHEN 'LOW' THEN 3 
+                        ELSE 4 
+                    END ASC, t.created_at DESC
+            `;
+        } else if (sortBy === 'newest') {
+            orderClause = 'ORDER BY t.created_at DESC';
+        } else if (sortBy === 'oldest') {
+            orderClause = 'ORDER BY t.created_at ASC';
+        }
+
+        const totalParamsCount = params.length;
+        const listQuery = `
+            SELECT ${selectFields}
+            FROM ${fromClause}
+            ${whereString}
+            ${orderClause}
+            LIMIT $${totalParamsCount + 1} OFFSET $${totalParamsCount + 2}
+        `;
+        const listParams = [...params, limit, offset];
+
+        const countQuery = `
+            SELECT COUNT(DISTINCT t.id) as count
+            FROM ${fromClause}
+            ${whereString}
+        `;
+
         const [tasksRes, countRes] = await Promise.all([
-            pool.query(query, params),
-            pool.query(countQuery, countParams)
+            pool.query(listQuery, listParams),
+            pool.query(countQuery, params)
         ]);
+
+        const totalItems = parseInt(countRes.rows[0].count);
 
         res.status(200).json({ 
             success: true, 
             tasks: tasksRes.rows,
             pagination: {
-                total: parseInt(countRes.rows[0].count),
+                total: totalItems,
                 page: Number(page),
                 limit: Number(limit),
-                pages: Math.ceil(parseInt(countRes.rows[0].count) / Number(limit))
+                pages: Math.ceil(totalItems / Number(limit))
             }
         });
     } catch (err) {
