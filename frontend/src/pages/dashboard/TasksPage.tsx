@@ -73,7 +73,7 @@ export default function TasksPage() {
   const handleAssignTask = async (userId: string) => {
     if (!assignModal.task) return;
     try {
-      await api.post(`/tasks/${assignModal.task.id}/assign`, { employee_id: userId, task_id: assignModal.task.id });
+      await api.post('/tasks/assign', { employee_id: userId, task_id: assignModal.task.id });
       setAssignModal({ open: false, task: null });
       safeFetch();
     } catch (err) { console.error(err); }
