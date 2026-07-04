@@ -59,7 +59,7 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
 
         if (req.user?.role === 'GLOBAL_ADMIN') {
             query = `
-                SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.is_active, v.name as vertical_name
+                SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.is_active, u.vertical_id, v.name as vertical_name
                 FROM users u
                 LEFT JOIN verticals v ON u.vertical_id = v.id
                 WHERE (u.first_name ILIKE $1 OR u.last_name ILIKE $1 OR u.email ILIKE $1)
@@ -71,7 +71,7 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
             countParams = [searchPattern];
         } else {
             query = `
-                SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.is_active, v.name as vertical_name
+                SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.is_active, u.vertical_id, v.name as vertical_name
                 FROM users u
                 LEFT JOIN verticals v ON u.vertical_id = v.id
                 WHERE u.vertical_id = $1 AND (u.first_name ILIKE $2 OR u.last_name ILIKE $2 OR u.email ILIKE $2)

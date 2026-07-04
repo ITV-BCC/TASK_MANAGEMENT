@@ -44,7 +44,7 @@ export default function TasksPage() {
       const [tRes, vRes, uRes] = await Promise.all([
         api.get(`/tasks?page=${page}&limit=${pagination.limit}&search=${search}`).catch(() => ({ data: { tasks: [] } })),
         api.get('/verticals').catch(() => ({ data: { verticals: [] } })),
-        api.get('/users').catch(() => ({ data: { users: [] } }))
+        api.get('/users?limit=1000').catch(() => ({ data: { users: [] } }))
       ]);
       setTasks(tRes.data.tasks || []);
       if (tRes.data.pagination) setPagination(tRes.data.pagination);

@@ -6,8 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-// Load environment variables FIRST before anything else
-dotenv_1.default.config();
 const db_1 = __importDefault(require("./config/db"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const verticalRoutes_1 = __importDefault(require("./routes/verticalRoutes"));
@@ -17,13 +15,16 @@ const statsRoutes_1 = __importDefault(require("./routes/statsRoutes"));
 const attachmentRoutes_1 = __importDefault(require("./routes/attachmentRoutes"));
 const commentRoutes_1 = __importDefault(require("./routes/commentRoutes"));
 const path_1 = __importDefault(require("path"));
+// Load environment variables
+dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // ==========================================
 // Middleware
 // ==========================================
+// ALLOW ALL ORIGINS IN PRODUCTION FOR INITIAL SETUP, OR SPECIFY YOUR DOMAIN
 app.use((0, cors_1.default)({
-    origin: ['http://localhost:5173', 'http://localhost:5174'], // Allow both Vite ports
+    origin: '*',
     credentials: true
 }));
 app.use(express_1.default.json());
@@ -33,7 +34,7 @@ app.use(express_1.default.json());
 app.get('/api/status', (req, res) => {
     res.status(200).json({
         success: true,
-        message: '🚀 Task Management Backend is running properly!',
+        message: '🚀 Intellectual Paradise Services Backend is LIVE!',
         timestamp: new Date().toISOString()
     });
 });
@@ -47,19 +48,19 @@ app.use('/api/comments', commentRoutes_1.default);
 // Serve Static Uploads
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
 // ==========================================
-// Initialize Server and check Database
+// Initialize Server
 // ==========================================
 app.listen(PORT, async () => {
     console.log(`\n==========================================`);
-    console.log(`🚀 Server initialized on http://localhost:${PORT}`);
+    console.log(`🚀 IPS Server initialized on Port ${PORT}`);
     try {
         const client = await db_1.default.connect();
-        console.log(`✅ Successfully connected to PostgreSQL Database!`);
+        console.log(`✅ Secure PostgreSQL Infrastructure Online!`);
         client.release();
     }
     catch (err) {
-        console.error(`❌ Failed to connect to Database. Check your .env file.`, err);
+        console.error(`❌ Database Connection Failed:`, err.message);
     }
-    console.log(`🔌 Ready to handle API requests`);
+    console.log(`🔌 API Gateway Ready`);
     console.log(`==========================================\n`);
 });
