@@ -94,7 +94,7 @@ export default function Sidebar() {
             onClick={toggleTheme}
             className="w-full h-10 mb-4 flex items-center justify-center gap-3 bg-background border border-border rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-primary transition-all"
           >
-            {theme === 'dark' ? <><Sun size={14} /> Bright Mode</> : <><Moon size={14} /> Stealth Mode</>}
+            {theme === 'dark' ? <><Sun size={14} /> Light Mode</> : <><Moon size={14} /> Dark Mode</>}
           </button>
 
           <div className="flex items-center gap-4 mb-6 px-2">
@@ -111,7 +111,7 @@ export default function Sidebar() {
             className="w-full h-12 flex items-center justify-center gap-3 border border-danger/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-danger/70 hover:bg-danger hover:text-white transition-all shadow-xl shadow-danger/5"
           >
             <LogOut size={16} />
-            Exit System
+            Log Out
           </button>
         </div>
       </div>

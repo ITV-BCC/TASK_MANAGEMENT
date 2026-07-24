@@ -45,15 +45,15 @@ function EditUserModal({ user, verticals, onClose, onSuccess }: { user: any; ver
                         </div>
                     </div>
                     <div className="space-y-2">
-                         <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Operating Role</label>
+                         <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Role</label>
                          <select value={form.role} onChange={e => setForm({...form, role: e.target.value})} className="w-full bg-background border border-border rounded-xl md:rounded-2xl px-5 md:px-6 h-12 md:h-14 text-white text-xs md:text-sm outline-none focus:border-primary">
                              {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
                          </select>
                     </div>
                     <div className="space-y-2">
-                         <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Vertical Assignment</label>
+                         <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Department</label>
                          <select value={form.vertical_id} onChange={e => setForm({...form, vertical_id: e.target.value})} className="w-full bg-background border border-border rounded-xl md:rounded-2xl px-5 md:px-6 h-12 md:h-14 text-white text-xs md:text-sm outline-none focus:border-primary">
-                             <option value="">System Organization</option>
+                             <option value="">No Department (Organization-wide)</option>
                              {verticals.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                          </select>
                     </div>
@@ -188,10 +188,10 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 md:mb-10 gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Personnel Directory</h1>
-          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.4em] mt-1.5 opacity-60">Identity & Access Control Center</p>
+          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 opacity-60">User Management & Access Control</p>
         </div>
         <button onClick={() => setShowTaskForm(true)} className="h-12 md:h-14 w-full sm:w-auto px-6 md:px-8 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2">
-            <Plus size={18} /> Register Member
+            <Plus size={18} /> Add User
         </button>
       </div>
 
@@ -201,7 +201,6 @@ export default function UsersPage() {
               <Search size={16} className="text-gray-600 ml-4" />
               <input 
                 type="text" 
-                placeholder="Search Identity..." 
                 className="bg-transparent border-none text-[11px] md:text-xs text-white px-2 md:px-4 py-2 outline-none flex-1"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -261,7 +260,7 @@ export default function UsersPage() {
                 <div className="flex justify-between items-center mb-10 md:mb-16">
                     <div>
                         <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">Member Intake</h2>
-                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.4em] mt-2">Initialize Profile Protocol</p>
+                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.4em] mt-2">User Details</p>
                     </div>
                     <button type="button" onClick={() => setShowTaskForm(false)} className="p-3 md:p-4 bg-background border border-border text-gray-500 hover:text-white rounded-2xl md:rounded-3xl transition-all"><X size={24}/></button>
                 </div>

@@ -62,14 +62,14 @@ export default function VerticalsPage() {
     <div className="p-4 md:p-8 space-y-6 md:space-y-10">
       {/* Header */}
       <div>
-        <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tighter">Strategic Sectors</h1>
-        <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.4em] mt-1.5 md:mt-2 opacity-60">System Organization & Global Infrastructure</p>
+        <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tighter">Departments</h1>
+        <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 md:mt-2 opacity-60">Manage organizational departments and verticals</p>
       </div>
 
       {/* Add New - Optimized for Mobile */}
       <form onSubmit={handleAdd} className="bg-surface border border-border p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] shadow-2xl max-w-2xl group focus-within:border-primary/30 transition-all">
          <h2 className="text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 md:mb-6 flex items-center gap-2">
-             <Plus size={14} className="text-primary" /> Initialize New Department
+             <Plus size={14} className="text-primary" /> Add New Department
          </h2>
          <div className="flex flex-col sm:flex-row gap-4">
             <input 
@@ -80,7 +80,7 @@ export default function VerticalsPage() {
                 onChange={e => setNewVertical(e.target.value)}
             />
             <button type="submit" className="h-12 md:h-16 px-6 md:px-10 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20">
-                Initialize
+                Add
             </button>
          </div>
       </form>

@@ -198,8 +198,8 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tighter">Unified Operations</h1>
-          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-1.5 opacity-70">Strategic Asset Management</p>
+          <h1 className="text-3xl font-black text-white tracking-tighter">Task Management</h1>
+          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 opacity-70">Manage and track all tasks</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
              <button onClick={exportToExcel} disabled={exporting} className="flex-1 sm:flex-none h-12 md:h-14 px-4 bg-surface border border-border text-gray-400 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] hover:text-white transition-all flex items-center justify-center gap-2">
@@ -208,7 +208,7 @@ export default function TasksPage() {
              </button>
              {user.role !== 'EMPLOYEE' && (
                 <button onClick={() => setShowTaskForm(true)} className="flex-[2] sm:flex-none h-12 md:h-14 px-6 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-primaryHover transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20">
-                    <Plus size={18} /> New Objective
+                    <Plus size={18} /> New Task
                 </button>
              )}
         </div>
@@ -380,8 +380,8 @@ export default function TasksPage() {
             <form onSubmit={handleCreateTask} className="bg-surface w-full max-w-xl border-l border-white/5 p-8 md:p-16 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col">
                 <div className="flex justify-between items-center mb-12 flex-shrink-0">
                     <div>
-                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">New Objective</h2>
-                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.4em] mt-2">Initialize Operation Protocol</p>
+                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">New Task</h2>
+                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.4em] mt-2">Task Details</p>
                     </div>
                     <button type="button" onClick={() => setShowTaskForm(false)} className="p-4 bg-background border border-border text-gray-500 hover:text-white rounded-2xl md:rounded-3xl transition-all"><X size={24}/></button>
                 </div>

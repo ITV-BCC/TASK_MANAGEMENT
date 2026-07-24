@@ -28,9 +28,9 @@ export default function DashboardHome() {
 
   if (fetching) {
      return (
-       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 font-bold uppercase tracking-widest text-[10px] font-mono tracking-[0.4em]">
+       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">
            <Loader2 className="animate-spin text-primary" size={32} />
-           <span>Syncing Global Intelligence...</span>
+           <span>Loading dashboard data...</span>
        </div>
      );
   }
@@ -47,11 +47,11 @@ export default function DashboardHome() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter">Enterprise Overview</h1>
-          <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.4em] mt-1.5 md:mt-2 opacity-60">System Intelligence & Global Analytics</p>
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter">Dashboard Overview</h1>
+          <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 md:mt-2 opacity-60">Key Performance Indicators & Analytics</p>
         </div>
         <div className="flex gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500 bg-surface border border-border px-4 py-2 rounded-xl">
-             <span className="text-primary animate-pulse">Live</span> • Sync OK
+             <span className="text-primary animate-pulse">Live</span> &bull; Up to Date
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function DashboardHome() {
         {/* Trend Area Chart */}
         <div className="bg-surface border border-border rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl overflow-hidden">
            <div className="flex justify-between items-center mb-6 md:mb-10">
-              <h4 className="text-white font-black uppercase tracking-widest text-[10px] md:text-xs">Production Velocity</h4>
+              <h4 className="text-white font-black uppercase tracking-widest text-[10px] md:text-xs">Task Completion Trend</h4>
               <ArrowUpRight className="text-secondary" />
            </div>
            <div className="h-[250px] md:h-[300px] w-full">
@@ -110,7 +110,7 @@ export default function DashboardHome() {
         {user.role === 'GLOBAL_ADMIN' ? (
             <div className="bg-surface border border-border rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl overflow-hidden">
                  <div className="flex justify-between items-center mb-6 md:mb-10">
-                    <h4 className="text-white font-black uppercase tracking-widest text-[10px] md:text-xs">Departmental Map</h4>
+                    <h4 className="text-white font-black uppercase tracking-widest text-[10px] md:text-xs">Tasks by Department</h4>
                     <Users className="text-primary" />
                  </div>
                  <div className="h-[250px] md:h-[300px] w-full">
@@ -139,8 +139,8 @@ export default function DashboardHome() {
                     <Clock size={32} />
                 </div>
                 <div>
-                   <h3 className="text-white font-black text-xl md:text-2xl tracking-tight">Performance Tracking</h3>
-                   <p className="text-gray-500 text-xs md:text-sm mt-2 max-w-xs md:max-w-sm">Keep track of your assigned tasks and production velocity to ensure organizational success.</p>
+                   <h3 className="text-white font-black text-xl md:text-2xl tracking-tight">Your Performance</h3>
+                   <p className="text-gray-500 text-xs md:text-sm mt-2 max-w-xs md:max-w-sm">Track your assigned tasks and stay on top of deadlines to ensure team success.</p>
                 </div>
             </div>
         )}
@@ -153,11 +153,11 @@ export default function DashboardHome() {
                   <TrendingUp size={24} className="text-primary" />
               </div>
               <div>
-                  <h4 className="text-white font-bold text-sm md:text-base">Internal Operations Monitor</h4>
-                  <p className="text-gray-500 text-[10px] md:text-xs">Proprietary workforce management system.</p>
+                  <h4 className="text-white font-bold text-sm md:text-base">Task Management Portal</h4>
+                  <p className="text-gray-500 text-[10px] md:text-xs font-medium">Manage objectives, resources, and departments.</p>
               </div>
           </div>
-          <button className="bg-white text-black px-8 h-12 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:scale-105 transition-transform shadow-2xl whitespace-nowrap">Status Check</button>
+          <button className="bg-white text-black px-8 h-12 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:scale-105 transition-transform shadow-2xl whitespace-nowrap">View All Tasks</button>
       </div>
     </div>
   );

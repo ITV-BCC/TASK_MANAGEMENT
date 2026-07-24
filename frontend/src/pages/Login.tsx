@@ -56,7 +56,7 @@ export default function Login() {
             )}
 
             <div className="space-y-2">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Identity Vector (Email)</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Email Address</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-500" />
@@ -73,7 +73,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Access Passkey</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 px-1">Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-500" />
@@ -95,7 +95,7 @@ export default function Login() {
               className="w-full flex justify-center items-center h-16 border border-transparent rounded-2xl shadow-xl shadow-primary/20 text-[10px] font-black uppercase tracking-widest text-white bg-primary hover:bg-primaryHover transition-all disabled:opacity-50 mt-4 group"
             >
               {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (
-                <span className="group-hover:scale-105 transition-transform">Initialize Security Protocol</span>
+                <span className="group-hover:scale-105 transition-transform">Log In Securely</span>
               )}
             </button>
           </form>
