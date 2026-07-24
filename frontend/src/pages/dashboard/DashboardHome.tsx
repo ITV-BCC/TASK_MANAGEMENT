@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ListTodo, TrendingUp, CheckCircle, Clock, Users, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { ListTodo, TrendingUp, CheckCircle, Clock, Users, AlertTriangle, ArrowUpRight, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 import api from '../../api';
 
@@ -26,7 +26,14 @@ export default function DashboardHome() {
     fetchStats();
   }, []);
 
-  if (fetching) return <div className="p-6 md:p-8 text-gray-500 font-bold uppercase tracking-widest text-[10px] animate-pulse">Syncing Global Intelligence...</div>;
+  if (fetching) {
+     return (
+       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-gray-500 font-bold uppercase tracking-widest text-[10px] font-mono tracking-[0.4em]">
+           <Loader2 className="animate-spin text-primary" size={32} />
+           <span>Syncing Global Intelligence...</span>
+       </div>
+     );
+  }
 
   const cardData = [
     { title: 'Total Tasks', value: stats?.total_tasks || 0, icon: ListTodo, color: 'text-primary', bg: 'bg-primary/5' },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Building2, Trash2, Edit3, X, Check } from 'lucide-react';
+import { Plus, Building2, Trash2, Edit3, X, Check, Loader2 } from 'lucide-react';
 import api from '../../api';
 
 export default function VerticalsPage() {
@@ -85,9 +85,11 @@ export default function VerticalsPage() {
          </div>
       </form>
 
-      {/* Grid - Adaptive Layout */}
-      {loading ? (
-          <div className="py-20 text-center text-gray-600 font-black uppercase tracking-widest text-xs animate-pulse">Scanning Grid Infrastructure...</div>
+       {loading ? (
+           <div className="py-20 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
+               <Loader2 className="animate-spin text-primary" size={32} />
+               <span>Scanning Grid Infrastructure...</span>
+           </div>
       ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {verticals.map((v) => (

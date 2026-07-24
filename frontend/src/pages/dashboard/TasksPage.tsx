@@ -27,6 +27,7 @@ export default function TasksPage() {
   const [filtStatus, setFiltStatus] = useState('ALL');
   const [filtPriority, setFiltPriority] = useState('ALL');
   const [sortBy, setSortBy] = useState('newest');
+  const [exporting, setExporting] = useState(false);
   
   const [historyModal, setHistoryModal] = useState<{ open: boolean; task: any | null; data: any[] }>({ open: false, task: null, data: [] });
   const [reworkModal, setReworkModal] = useState<{ open: boolean; task: any | null; reason: string }>({ open: false, task: null, reason: '' });
@@ -93,22 +94,38 @@ export default function TasksPage() {
     } catch (err) { console.error(err); }
   };
 
-  const exportToExcel = () => {
-    const exportData = tasks.map(t => ({
-      Title: t.title,
-      Description: t.description,
-      Priority: t.priority,
-      Status: t.status,
-      Department: t.vertical_name || 'Organization Wide',
-      'Due Date': t.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
-      'Created At': new Date(t.created_at).toLocaleString(),
-      'Last Remark': t.last_remark || ''
-    }));
+  const exportToExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get(`/tasks?limit=1000000&search=${search}&status=${filtStatus}&priority=${filtPriority}&sortBy=${sortBy}`);
+      const list = res.data.tasks || [];
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Tasks");
-    XLSX.writeFile(wb, `TaskReport_${new Date().toLocaleDateString()}.xlsx`);
+      const exportData = list.map((t: any) => ({
+        Title: t.title,
+        Description: t.description,
+        Priority: t.priority,
+        Status: t.status,
+        Department: t.vertical_name || 'Organization Wide',
+        'Due Date': t.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
+        'Created At': new Date(t.created_at).toLocaleString(),
+        'Last Remark': t.last_remark || ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Tasks");
+      XLSX.writeFile(wb, `TaskReport_${new Date().toLocaleDateString()}.xlsx`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const getDownloadURL = (filePath: string) => {
+    const cleanBase = api.defaults.baseURL?.replace('/api', '') || 'https://task-management-f0f0.onrender.com';
+    return `${cleanBase}/uploads/${filePath}`;
   };
 
   const openChat = async (task: any) => {
@@ -185,8 +202,9 @@ export default function TasksPage() {
           <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-1.5 opacity-70">Strategic Asset Management</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-             <button onClick={exportToExcel} className="flex-1 sm:flex-none h-12 md:h-14 px-4 bg-surface border border-border text-gray-400 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] hover:text-white transition-all flex items-center justify-center gap-2">
-                <FileSpreadsheet size={16} className="text-secondary" /> <span className="hidden xs:inline">Export</span>
+             <button onClick={exportToExcel} disabled={exporting} className="flex-1 sm:flex-none h-12 md:h-14 px-4 bg-surface border border-border text-gray-400 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] hover:text-white transition-all flex items-center justify-center gap-2">
+                {exporting ? <Loader2 size={16} className="text-secondary animate-spin" /> : <FileSpreadsheet size={16} className="text-secondary" />}
+                <span className="hidden xs:inline">{exporting ? 'Exporting...' : 'Export'}</span>
              </button>
              {user.role !== 'EMPLOYEE' && (
                 <button onClick={() => setShowTaskForm(true)} className="flex-[2] sm:flex-none h-12 md:h-14 px-6 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] hover:bg-primaryHover transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20">
@@ -261,7 +279,10 @@ export default function TasksPage() {
       {/* Grid Layout */}
       <div className="grid grid-cols-1 gap-6">
         {fetching ? (
-            <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-xs animate-pulse font-mono tracking-[0.5em]">Establishing Connection...</div>
+            <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
+                <Loader2 size={32} className="text-primary animate-spin" />
+                <span>Establishing Connection...</span>
+            </div>
         ) : tasks.length === 0 ? (
             <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Active Vectors Detected</div>
         ) : tasks.map(task => (
@@ -503,7 +524,7 @@ export default function TasksPage() {
                                 <p className="text-[9px] text-gray-600 font-bold uppercase mt-1">By {f.first_name}</p>
                             </div>
                             <div className="flex gap-1.5 md:gap-2">
-                                <a href={`http://localhost:5000/uploads/${f.file_path}`} target="_blank" rel="noreferrer" className="p-3 bg-surface text-gray-400 hover:text-secondary rounded-xl md:rounded-2xl transition-all"><Download size={14}/></a>
+                                <a href={getDownloadURL(f.file_path)} target="_blank" rel="noreferrer" className="p-3 bg-surface text-gray-400 hover:text-secondary rounded-xl md:rounded-2xl transition-all" title="Download System Asset"><Download size={14}/></a>
                                 {(user.id === f.uploaded_by || user.role === 'GLOBAL_ADMIN') && <button onClick={() => deleteFile(f.id)} className="p-3 bg-surface text-gray-400 hover:text-danger rounded-xl md:rounded-2xl transition-all"><Trash2 size={14}/></button>}
                             </div>
                         </div>

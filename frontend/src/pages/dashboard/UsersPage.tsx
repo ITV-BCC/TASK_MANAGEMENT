@@ -215,10 +215,12 @@ export default function UsersPage() {
           </div>
       </div>
 
-      {/* User Grid / Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
         {fetching ? (
-            <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] animate-pulse">Syncing Personnel Database...</div>
+            <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
+                <Loader2 className="animate-spin text-primary" size={32} />
+                <span>Syncing Personnel Database...</span>
+            </div>
         ) : users.length === 0 ? (
             <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Personnel Found in This Sector</div>
         ) : users.map(u => (
