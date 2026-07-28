@@ -1,66 +1,37 @@
 import { useEffect, useState } from 'react';
-import { Loader2, FolderTree, Trash2, Edit3, X, Check, Search } from 'lucide-react';
+import { Loader2, FolderTree, Trash2, Edit3, X, Check, ChevronDown, ChevronUp, Plus, Search } from 'lucide-react';
 import api from '../../api';
 
-export default function ModulesPage() {
-    const [verticals, setVerticals] = useState<any[]>([]);
-    const [modules, setModules] = useState<any[]>([]);
-    const [selectedVertical, setSelectedVertical] = useState<string>('');
-    const [fetching, setFetching] = useState(true);
-    
-    // Add Form
+function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any, modules: any[], onRefresh: () => void, search: string }) {
+    const [expanded, setExpanded] = useState(false);
     const [newCode, setNewCode] = useState('');
     const [newName, setNewName] = useState('');
-    
-    // Edit Form
     const [editMode, setEditMode] = useState<string | null>(null);
     const [editCode, setEditCode] = useState('');
     const [editName, setEditName] = useState('');
-    
-    // Search filter
-    const [search, setSearch] = useState('');
 
-    const fetchVerticals = async () => {
-        try {
-            const res = await api.get('/verticals');
-            setVerticals(res.data.verticals || []);
-            if (res.data.verticals?.length > 0) {
-                setSelectedVertical(res.data.verticals[0].id);
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const fetchModules = async (vid: string) => {
-        setFetching(true);
-        try {
-            const res = await api.get(`/modules${vid ? `?vertical_id=${vid}` : ''}`);
-            setModules(res.data.modules || []);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setFetching(false);
-        }
-    };
+    const matchesVertical = search && vertical.name.toLowerCase().includes(search.toLowerCase());
+    const vModules = modules.filter((m: any) => 
+        m.vertical_id === vertical.id && 
+        (!search || matchesVertical || m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()))
+    );
 
     useEffect(() => {
-        fetchVerticals();
-    }, []);
-
-    useEffect(() => {
-        if (selectedVertical) {
-            fetchModules(selectedVertical);
+        if (search && vModules.length > 0) {
+            setExpanded(true);
+        } else if (!search) {
+            setExpanded(false);
         }
-    }, [selectedVertical]);
+    }, [search]);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/modules', { vertical_id: selectedVertical, code: newCode, name: newName });
+            await api.post('/modules', { vertical_id: vertical.id, code: newCode, name: newName });
             setNewCode('');
             setNewName('');
-            fetchModules(selectedVertical);
+            onRefresh();
+            setExpanded(true);
         } catch (err) {
             console.error(err);
             alert('Failed to add module');
@@ -68,10 +39,10 @@ export default function ModulesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Permanently delete this module? Tasks assigned to it will retain it, or revert to Global.')) return;
+        if (!confirm('Permanently delete this module? Tasks tied to it will lose their module mapping.')) return;
         try {
             await api.delete(`/modules/${id}`);
-            fetchModules(selectedVertical);
+            onRefresh();
         } catch (err) {
             console.error(err);
         }
@@ -81,7 +52,7 @@ export default function ModulesPage() {
         try {
             await api.put(`/modules/${id}`, { code: editCode, name: editName });
             setEditMode(null);
-            fetchModules(selectedVertical);
+            onRefresh();
         } catch (err) {
             console.error(err);
             alert('Failed to update module');
@@ -94,129 +65,170 @@ export default function ModulesPage() {
         setEditName(m.name);
     };
 
-    const filteredModules = modules.filter(m => 
-        (m.name.toLowerCase().includes(search.toLowerCase())) ||
-        (m.code.toLowerCase().includes(search.toLowerCase()))
+    return (
+        <div className={`bg-surface border border-border rounded-[2rem] shadow-2xl flex flex-col transition-all h-max overflow-hidden ${expanded ? 'border-primary/40 shadow-primary/10' : 'hover:border-primary/20'}`}>
+            {/* Header (Title) */}
+            <div 
+                className="p-5 md:p-6 cursor-pointer flex justify-between items-center group bg-background/30 hover:bg-background/80 transition-all border-b border-border/50"
+                onClick={() => setExpanded(!expanded)}
+            >
+                <div className="flex-1 pr-4">
+                   <h3 className="text-base md:text-lg font-black text-white group-hover:text-primary transition-all tracking-tight leading-tight">{vertical.name}</h3>
+                   <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                        {modules.filter((m: any) => m.vertical_id === vertical.id).length} Modules
+                   </p>
+                </div>
+                <div className={`shrink-0 transition-transform ${expanded ? 'bg-primary/20 text-primary border-primary/30' : 'bg-surface text-gray-500 border-border group-hover:text-primary'} border p-2 md:p-3 rounded-xl`}>
+                   {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+            </div>
+
+            {/* Details (Description/Expanded View) */}
+            {expanded && (
+                <div className="p-4 md:p-6 bg-surface/50">
+                    <div className="space-y-4">
+                        {vModules.length === 0 ? (
+                            <div className="py-6 text-center border border-dashed border-border rounded-2xl bg-background/50">
+                                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">{search ? 'No Matches in this Department' : 'No Modules Yet'}</p>
+                            </div>
+                        ) : vModules.map((m: any) => (
+                            <div key={m.id} className="bg-background border border-border p-4 rounded-2xl flex flex-col gap-3 group/item hover:border-primary/30 transition-colors shadow-lg">
+                                {editMode === m.id ? (
+                                    <div className="flex flex-col gap-3">
+                                        <input 
+                                            className="w-full h-10 bg-surface border border-primary/50 rounded-xl px-4 text-white text-xs font-mono outline-none focus:border-primary" 
+                                            value={editCode} 
+                                            onChange={e => setEditCode(e.target.value)} 
+                                            placeholder="Code"
+                                        />
+                                        <input 
+                                            className="w-full h-10 bg-surface border border-primary/50 rounded-xl px-4 text-white text-xs outline-none focus:border-primary" 
+                                            value={editName} 
+                                            onChange={e => setEditName(e.target.value)} 
+                                            placeholder="Name"
+                                        />
+                                        <div className="flex gap-2 justify-end mt-1">
+                                            <button onClick={() => setEditMode(null)} className="flex-1 h-10 rounded-xl bg-surface border border-border text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1"><X size={14}/> Cancel</button>
+                                            <button onClick={() => handleUpdate(m.id)} className="flex-1 h-10 rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1"><Check size={14}/> Save</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 text-primary shadow-inner">
+                                                <FolderTree size={18} />
+                                            </div>
+                                            <div className="flex-1 min-w-0 pt-0.5">
+                                                <h4 className="text-white font-bold text-sm leading-tight flex flex-col items-start gap-1.5">
+                                                    <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono text-[10px] uppercase tracking-widest">{m.code}</span>
+                                                    <span className="truncate block max-w-full">{m.name}</span>
+                                                </h4>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                                            <button onClick={() => startEdit(m)} className="flex-1 h-9 rounded-lg bg-surface border border-border text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-widest"><Edit3 size={14} /> Edit</button>
+                                            <button onClick={() => handleDelete(m.id)} className="flex-1 h-9 rounded-lg bg-danger/10 border border-danger/20 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-widest"><Trash2 size={14} /> Delete</button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Quick Add Inline */}
+                    <div className="mt-6 pt-5 border-t border-border/80">
+                        <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-3 pl-1">Add New Module</p>
+                        <form onSubmit={handleAdd} className="flex flex-col gap-3">
+                            <input type="text" placeholder="Code (e.g. 1.1)" value={newCode} onChange={e => setNewCode(e.target.value)} required className="w-full bg-background border border-border h-12 px-4 rounded-xl text-white text-xs outline-none focus:border-primary transition-colors" />
+                            <input type="text" placeholder="Module Name (Title)" value={newName} onChange={e => setNewName(e.target.value)} required className="w-full bg-background border border-border h-12 px-4 rounded-xl text-white text-xs outline-none focus:border-primary transition-colors" />
+                            <button type="submit" className="h-12 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-1 shadow-lg shadow-white/5">
+                                 <Plus size={16} /> Add to Dept
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
     );
+}
+
+export default function ModulesPage() {
+    const [verticals, setVerticals] = useState<any[]>([]);
+    const [modules, setModules] = useState<any[]>([]);
+    const [fetching, setFetching] = useState(true);
+    const [search, setSearch] = useState('');
+
+    const fetchData = async () => {
+        setFetching(true);
+        try {
+            const [vRes, mRes] = await Promise.all([
+                api.get('/verticals'),
+                api.get('/modules')
+            ]);
+            setVerticals(vRes.data.verticals || []);
+            setModules(mRes.data.modules || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setFetching(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const filteredVerticals = search 
+        ? verticals.filter(v => 
+            v.name.toLowerCase().includes(search.toLowerCase()) || 
+            modules.some((m:any) => m.vertical_id === v.id && (m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase())))
+          )
+        : verticals;
 
     return (
         <div className="p-4 md:p-8 space-y-6 md:space-y-10">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tighter">System Modules</h1>
-                <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 md:mt-2 opacity-60">Manage detailed categorization for departments</p>
-            </div>
-
-            {/* Department Selector & Search */}
-            <div className="flex flex-col lg:flex-row gap-6">
-                <div className="flex-1 bg-surface border border-border p-6 rounded-2xl md:rounded-[2.5rem] shadow-2xl">
-                    <label className="text-[10px] text-gray-400 uppercase font-bold tracking-widest pl-2 block mb-3">Select Active Department</label>
-                    <select 
-                        className="w-full h-14 bg-background border border-border rounded-xl px-6 text-white outline-none focus:border-primary transition-all shadow-inner uppercase font-black text-xs md:text-sm tracking-widest"
-                        value={selectedVertical}
-                        onChange={(e) => setSelectedVertical(e.target.value)}
-                    >
-                        {verticals.map(v => (
-                            <option key={v.id} value={v.id}>{v.name}</option>
-                        ))}
-                    </select>
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+                <div>
+                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter">System Modules</h1>
+                    <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 md:mt-2 opacity-60">Manage detailed categorization for departments</p>
                 </div>
                 
-                <div className="flex-1 bg-surface border border-border p-6 rounded-2xl md:rounded-[2.5rem] shadow-2xl flex flex-col justify-end">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Search modules..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full h-14 pl-12 pr-6 bg-background border border-border rounded-xl text-white outline-none focus:border-primary shadow-inner transition-all text-xs md:text-sm"
-                        />
-                        <Search size={18} className="absolute left-4 top-4.5 text-gray-500" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Add New Module */}
-            <form onSubmit={handleAdd} className="bg-surface border border-border p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] shadow-2xl group focus-within:border-primary/30 transition-all">
-                <h2 className="text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 md:mb-6">
-                    Add New Module
-                </h2>
-                <div className="flex flex-col md:flex-row gap-4">
-                    <input 
-                        type="text" 
-                        required
-                        className="w-full md:w-48 bg-background border border-border h-12 md:h-16 px-6 md:px-8 rounded-xl md:rounded-2xl text-gray-900 dark:text-white text-xs md:text-sm outline-none focus:border-primary transition-all shadow-inner font-mono tracking-widest"
-                        placeholder="Code (e.g. 1.1)"
-                        value={newCode}
-                        onChange={e => setNewCode(e.target.value)}
-                    />
-                    <input 
+                <div className="w-full lg:w-96 relative">
+                    <input
                         type="text"
-                        required
-                        className="flex-1 bg-background border border-border h-12 md:h-16 px-6 md:px-8 rounded-xl md:rounded-2xl text-gray-900 dark:text-white text-xs md:text-sm outline-none focus:border-primary transition-all shadow-inner"
-                        placeholder="Module Name (e.g. HUMAN RESOURCE)"
-                        value={newName}
-                        onChange={e => setNewName(e.target.value)}
+                        placeholder="Search departments or modules..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full h-14 pl-12 pr-6 bg-surface border border-border rounded-2xl text-white outline-none focus:border-primary transition-all text-xs shadow-2xl"
                     />
-                    <button type="submit" className="h-12 md:h-16 px-6 md:px-10 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20">
-                        Commit
-                    </button>
+                    <Search size={18} className="absolute left-4 top-4.5 text-gray-500" />
                 </div>
-            </form>
-
-            {/* List */}
-            <div className="grid grid-cols-1 gap-4">
-                {fetching ? (
-                    <div className="py-20 flex justify-center text-primary"><Loader2 size={32} className="animate-spin" /></div>
-                ) : filteredModules.length === 0 ? (
-                    <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Modules Defined for this Department</div>
-                ) : filteredModules.map((m) => (
-                    <div key={m.id} className="bg-surface border border-border p-4 md:p-6 rounded-2xl md:rounded-3xl flex flex-col md:flex-row md:items-center justify-between hover:border-border/80 transition-all shadow-lg group">
-                        
-                        {editMode === m.id ? (
-                            <div className="flex flex-col md:flex-row gap-4 flex-1 mr-0 md:mr-6">
-                                <input 
-                                    className="w-full md:w-32 h-12 bg-background border border-primary/50 rounded-xl px-4 text-white text-xs font-mono outline-none" 
-                                    value={editCode} 
-                                    onChange={e => setEditCode(e.target.value)} 
-                                />
-                                <input 
-                                    className="flex-1 h-12 bg-background border border-primary/50 rounded-xl px-6 text-white text-xs outline-none" 
-                                    value={editName} 
-                                    onChange={e => setEditName(e.target.value)} 
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-4 md:gap-6 flex-1 mb-4 md:mb-0">
-                                <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-[1.2rem] bg-background border border-border flex items-center justify-center shadow-inner shrink-0 group-hover:scale-105 transition-all text-primary">
-                                    <FolderTree size={20} className="md:w-6 md:h-6" />
-                                </div>
-                                <div className="min-w-0 pr-4">
-                                    <h3 className="text-white font-black text-sm md:text-base tracking-tight truncate flex items-center gap-3">
-                                        <span className="text-primary font-mono">{m.code}</span>
-                                        {m.name}
-                                    </h3>
-                                    <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mt-1 truncate">ID: {m.id.substring(0,8)}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-2 justify-end self-end md:self-auto">
-                            {editMode === m.id ? (
-                                <>
-                                    <button onClick={() => setEditMode(null)} className="p-3 md:p-4 rounded-xl bg-background border border-border text-gray-500 hover:text-white transition-all shadow-sm"><X size={16} /></button>
-                                    <button onClick={() => handleUpdate(m.id)} className="p-3 md:p-4 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"><Check size={16} /></button>
-                                </>
-                            ) : (
-                                <>
-                                    <button onClick={() => startEdit(m)} className="p-3 md:p-4 rounded-xl bg-background border border-border text-gray-500 hover:text-white transition-all shadow-sm"><Edit3 size={16} /></button>
-                                    <button onClick={() => handleDelete(m.id)} className="p-3 md:p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger hover:bg-danger hover:text-white transition-all shadow-sm"><Trash2 size={16} /></button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                ))}
             </div>
+
+            {fetching ? (
+                <div className="min-h-[40vh] flex flex-col items-center justify-center gap-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">
+                    <Loader2 className="animate-spin text-primary" size={32} />
+                    <span>Loading Repository...</span>
+                </div>
+            ) : filteredVerticals.length === 0 ? (
+                <div className="py-20 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">
+                    No search results found.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
+                    {filteredVerticals.map(v => (
+                        <VerticalCard 
+                            key={v.id} 
+                            vertical={v} 
+                            modules={modules} 
+                            onRefresh={fetchData} 
+                            search={search}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
+
