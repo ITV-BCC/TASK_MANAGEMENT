@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ListTodo, TrendingUp, CheckCircle, Clock, Users, AlertTriangle, ArrowUpRight, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ListTodo, TrendingUp, CheckCircle, Clock, Users, AlertTriangle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, PieChart, Pie } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
