@@ -34,7 +34,7 @@ export const getModules = async (req: AuthRequest, res: Response): Promise<void>
 
 export const createModule = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { vertical_id, code, name } = req.body;
+        const { vertical_id, code, name, description } = req.body;
         
         if (!vertical_id || !code || !name) {
             res.status(400).json({ success: false, message: 'Please provide all fields' });
@@ -42,8 +42,8 @@ export const createModule = async (req: AuthRequest, res: Response): Promise<voi
         }
 
         const result = await pool.query(
-            "INSERT INTO modules (vertical_id, code, name) VALUES ($1, $2, $3) RETURNING *",
-            [vertical_id, code, name]
+            "INSERT INTO modules (vertical_id, code, name, description) VALUES ($1, $2, $3, $4) RETURNING *",
+            [vertical_id, code, name, description || '']
         );
         res.status(201).json({ success: true, module: result.rows[0] });
     } catch (err) {
@@ -55,11 +55,11 @@ export const createModule = async (req: AuthRequest, res: Response): Promise<voi
 export const updateModule = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { code, name } = req.body;
+        const { code, name, description } = req.body;
 
         const result = await pool.query(
-            "UPDATE modules SET code = $1, name = $2 WHERE id = $3 RETURNING *",
-            [code, name, id]
+            "UPDATE modules SET code = $1, name = $2, description = $3 WHERE id = $4 RETURNING *",
+            [code, name, description || '', id]
         );
         
         if (result.rowCount === 0) {

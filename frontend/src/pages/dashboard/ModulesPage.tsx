@@ -6,14 +6,16 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
     const [expanded, setExpanded] = useState(false);
     const [newCode, setNewCode] = useState('');
     const [newName, setNewName] = useState('');
+    const [newDescription, setNewDescription] = useState('');
     const [editMode, setEditMode] = useState<string | null>(null);
     const [editCode, setEditCode] = useState('');
     const [editName, setEditName] = useState('');
+    const [editDescription, setEditDescription] = useState('');
 
     const matchesVertical = search && vertical.name.toLowerCase().includes(search.toLowerCase());
     const vModules = modules.filter((m: any) => 
         m.vertical_id === vertical.id && 
-        (!search || matchesVertical || m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()))
+        (!search || matchesVertical || m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()) || m.description?.toLowerCase().includes(search.toLowerCase()))
     );
 
     useEffect(() => {
@@ -27,9 +29,10 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post('/modules', { vertical_id: vertical.id, code: newCode, name: newName });
+            await api.post('/modules', { vertical_id: vertical.id, code: newCode, name: newName, description: newDescription });
             setNewCode('');
             setNewName('');
+            setNewDescription('');
             onRefresh();
             setExpanded(true);
         } catch (err) {
@@ -50,7 +53,7 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
 
     const handleUpdate = async (id: string) => {
         try {
-            await api.put(`/modules/${id}`, { code: editCode, name: editName });
+            await api.put(`/modules/${id}`, { code: editCode, name: editName, description: editDescription });
             setEditMode(null);
             onRefresh();
         } catch (err) {
@@ -63,6 +66,7 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
         setEditMode(m.id);
         setEditCode(m.code);
         setEditName(m.name);
+        setEditDescription(m.description || '');
     };
 
     return (
@@ -107,6 +111,12 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
                                             onChange={e => setEditName(e.target.value)} 
                                             placeholder="Name"
                                         />
+                                        <textarea
+                                            className="w-full bg-surface border border-primary/50 rounded-xl p-4 text-white text-xs outline-none focus:border-primary resize-none min-h-[80px]" 
+                                            value={editDescription} 
+                                            onChange={e => setEditDescription(e.target.value)} 
+                                            placeholder="Module Description..."
+                                        />
                                         <div className="flex gap-2 justify-end mt-1">
                                             <button onClick={() => setEditMode(null)} className="flex-1 h-10 rounded-xl bg-surface border border-border text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1"><X size={14}/> Cancel</button>
                                             <button onClick={() => handleUpdate(m.id)} className="flex-1 h-10 rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1"><Check size={14}/> Save</button>
@@ -123,6 +133,9 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
                                                     <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono text-[10px] uppercase tracking-widest">{m.code}</span>
                                                     <span className="truncate block max-w-full">{m.name}</span>
                                                 </h4>
+                                                {m.description && (
+                                                    <p className="text-[10px] text-gray-400 mt-3 leading-relaxed whitespace-pre-wrap bg-surface p-2.5 rounded-lg border border-border/50 shadow-inner">{m.description}</p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 pt-2 border-t border-border/50">
@@ -141,6 +154,7 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
                         <form onSubmit={handleAdd} className="flex flex-col gap-3">
                             <input type="text" placeholder="Code (e.g. 1.1)" value={newCode} onChange={e => setNewCode(e.target.value)} required className="w-full bg-background border border-border h-12 px-4 rounded-xl text-white text-xs outline-none focus:border-primary transition-colors" />
                             <input type="text" placeholder="Module Name (Title)" value={newName} onChange={e => setNewName(e.target.value)} required className="w-full bg-background border border-border h-12 px-4 rounded-xl text-white text-xs outline-none focus:border-primary transition-colors" />
+                            <textarea placeholder="Description (Optional)" value={newDescription} onChange={e => setNewDescription(e.target.value)} className="w-full bg-background border border-border rounded-xl text-white text-xs outline-none focus:border-primary transition-colors p-4 resize-none min-h-[80px]" />
                             <button type="submit" className="h-12 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-1 shadow-lg shadow-white/5">
                                  <Plus size={16} /> Add to Dept
                             </button>
