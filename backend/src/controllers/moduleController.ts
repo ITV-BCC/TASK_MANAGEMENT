@@ -6,18 +6,20 @@ export const getModules = async (req: AuthRequest, res: Response): Promise<void>
     try {
         const { vertical_id } = req.query;
         let query = `
-            SELECT m.*, v.name as vertical_name 
+            SELECT m.*, v.name as vertical_name, u.first_name as assignee_first_name, u.last_name as assignee_last_name
             FROM modules m 
             JOIN verticals v ON m.vertical_id = v.id 
+            LEFT JOIN users u ON m.assignee_id = u.id
             ORDER BY m.code ASC
         `;
         let params: any[] = [];
         
         if (vertical_id) {
             query = `
-                SELECT m.*, v.name as vertical_name 
+                SELECT m.*, v.name as vertical_name, u.first_name as assignee_first_name, u.last_name as assignee_last_name
                 FROM modules m 
                 JOIN verticals v ON m.vertical_id = v.id 
+                LEFT JOIN users u ON m.assignee_id = u.id
                 WHERE m.vertical_id = $1
                 ORDER BY m.code ASC
             `;
@@ -34,7 +36,7 @@ export const getModules = async (req: AuthRequest, res: Response): Promise<void>
 
 export const createModule = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { vertical_id, code, name, description } = req.body;
+        const { vertical_id, code, name, description, assignee_id, due_date } = req.body;
         
         if (!vertical_id || !code || !name) {
             res.status(400).json({ success: false, message: 'Please provide all fields' });
@@ -42,8 +44,8 @@ export const createModule = async (req: AuthRequest, res: Response): Promise<voi
         }
 
         const result = await pool.query(
-            "INSERT INTO modules (vertical_id, code, name, description) VALUES ($1, $2, $3, $4) RETURNING *",
-            [vertical_id, code, name, description || '']
+            "INSERT INTO modules (vertical_id, code, name, description, assignee_id, due_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            [vertical_id, code, name, description || '', assignee_id || null, due_date || null]
         );
         res.status(201).json({ success: true, module: result.rows[0] });
     } catch (err) {
@@ -55,11 +57,11 @@ export const createModule = async (req: AuthRequest, res: Response): Promise<voi
 export const updateModule = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { code, name, description } = req.body;
+        const { code, name, description, assignee_id, due_date } = req.body;
 
         const result = await pool.query(
-            "UPDATE modules SET code = $1, name = $2, description = $3 WHERE id = $4 RETURNING *",
-            [code, name, description || '', id]
+            "UPDATE modules SET code = $1, name = $2, description = $3, assignee_id = $4, due_date = $5 WHERE id = $6 RETURNING *",
+            [code, name, description || '', assignee_id || null, due_date || null, id]
         );
         
         if (result.rowCount === 0) {
