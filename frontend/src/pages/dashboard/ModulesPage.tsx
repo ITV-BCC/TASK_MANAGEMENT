@@ -41,11 +41,8 @@ function ModuleModal({ module, users, onClose, onRefresh }: { module: any, users
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface border border-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
               
-              <div className="p-6 md:p-8 border-b border-border/50 flex justify-between items-center bg-background/50 relative overflow-hidden">
-                  <div className="absolute -left-10 -top-10 text-primary/5">
-                      <FolderTree size={120} />
-                  </div>
-                  <div className="relative z-10">
+              <div className="p-6 md:p-8 border-b border-border/50 flex justify-between items-center bg-background/50">
+                  <div className="flex items-center gap-3">
                       <h3 className="text-white font-black text-xl md:text-2xl tracking-tight flex items-center gap-3">
                           <span className="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-lg text-sm font-mono tracking-widest">{module.code}</span>
                           Module Details
@@ -184,9 +181,9 @@ function VerticalCard({ vertical, modules, onRefresh, search, onSelectModule }: 
     };
 
     return (
-        <div className={`bg-surface border border-border rounded-[2rem] shadow-2xl flex flex-col transition-all h-max overflow-hidden ${expanded ? 'border-primary/40 shadow-primary/10' : 'hover:border-primary/20'}`}>
+        <div className={`bg-surface border rounded-[2rem] shadow-2xl flex flex-col transition-all h-max overflow-hidden ${expanded ? 'border-primary shadow-primary/20' : 'border-border hover:border-primary/20'}`}>
             <div 
-                className="p-5 md:p-6 cursor-pointer flex justify-between items-center group bg-background/30 hover:bg-background/80 transition-all border-b border-border/50"
+                className={`p-5 md:p-6 cursor-pointer flex justify-between items-center group transition-all border-b ${expanded ? 'bg-primary/10 border-primary/20' : 'bg-background/30 hover:bg-background/80 border-border/50'}`}
                 onClick={() => setExpanded(!expanded)}
             >
                 <div className="flex-1 pr-4">
