@@ -1,16 +1,65 @@
 import { useEffect, useState } from 'react';
-import { Loader2, FolderTree, Trash2, Edit3, X, Check, ChevronDown, ChevronUp, Plus, Search } from 'lucide-react';
+import { Loader2, FolderTree, Trash2, X, ChevronDown, ChevronUp, Plus, Search } from 'lucide-react';
 import api from '../../api';
 
-function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any, modules: any[], onRefresh: () => void, search: string }) {
+function ModuleModal({ module, onClose, onRefresh }: { module: any, onClose: ()=>void, onRefresh: ()=>void }) {
+   const [code, setCode] = useState(module.code);
+   const [name, setName] = useState(module.name);
+   const [description, setDescription] = useState(module.description || '');
+   const [saving, setSaving] = useState(false);
+
+   const handleSave = async (e: React.FormEvent) => {
+       e.preventDefault();
+       setSaving(true);
+       try {
+           await api.put(`/modules/${module.id}`, { code, name, description });
+           onRefresh();
+           onClose();
+       } catch (err) {
+           console.error(err);
+           alert('Failed to update module');
+       } finally {
+           setSaving(false);
+       }
+   };
+
+   return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface border border-border rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+              <div className="p-6 border-b border-border/50 flex justify-between items-center bg-background/50">
+                  <h3 className="text-white font-black text-lg tracking-tight">Module Details</h3>
+                  <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-surface border border-border rounded-full text-gray-500 hover:text-white hover:border-border/80 transition-all"><X size={14} /></button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                  <form onSubmit={handleSave} className="flex flex-col gap-5">
+                      <div>
+                          <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest pl-1">Module Code</label>
+                          <input required value={code} onChange={e=>setCode(e.target.value)} className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-white font-mono text-xs outline-none focus:border-primary transition-colors" />
+                      </div>
+                      <div>
+                          <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest pl-1">Module Name</label>
+                          <input required value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-white text-xs outline-none focus:border-primary transition-colors" />
+                      </div>
+                      <div>
+                          <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest pl-1">Detailed Description (Optional)</label>
+                          <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Write details about what tasks go into this module..." className="w-full mt-1.5 bg-background border border-border p-4 rounded-xl text-white text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary min-h-[140px] resize-none transition-all shadow-inner" />
+                      </div>
+                      <div className="pt-2 flex gap-4">
+                          <button type="button" onClick={onClose} className="flex-1 h-12 rounded-xl bg-background border border-border text-gray-400 hover:text-white transition-colors font-black uppercase tracking-widest text-[10px]">Close</button>
+                          <button type="submit" disabled={saving} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-lg shadow-primary/20 disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      </div>
+   );
+}
+
+function VerticalCard({ vertical, modules, onRefresh, search, onSelectModule }: { vertical: any, modules: any[], onRefresh: () => void, search: string, onSelectModule: (m:any)=>void }) {
     const [expanded, setExpanded] = useState(false);
     const [newCode, setNewCode] = useState('');
     const [newName, setNewName] = useState('');
     const [newDescription, setNewDescription] = useState('');
-    const [editMode, setEditMode] = useState<string | null>(null);
-    const [editCode, setEditCode] = useState('');
-    const [editName, setEditName] = useState('');
-    const [editDescription, setEditDescription] = useState('');
 
     const matchesVertical = search && vertical.name.toLowerCase().includes(search.toLowerCase());
     const vModules = modules.filter((m: any) => 
@@ -41,7 +90,8 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
         if (!confirm('Permanently delete this module? Tasks tied to it will lose their module mapping.')) return;
         try {
             await api.delete(`/modules/${id}`);
@@ -49,24 +99,6 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
         } catch (err) {
             console.error(err);
         }
-    };
-
-    const handleUpdate = async (id: string) => {
-        try {
-            await api.put(`/modules/${id}`, { code: editCode, name: editName, description: editDescription });
-            setEditMode(null);
-            onRefresh();
-        } catch (err) {
-            console.error(err);
-            alert('Failed to update module');
-        }
-    };
-
-    const startEdit = (m: any) => {
-        setEditMode(m.id);
-        setEditCode(m.code);
-        setEditName(m.name);
-        setEditDescription(m.description || '');
     };
 
     return (
@@ -96,54 +128,29 @@ function VerticalCard({ vertical, modules, onRefresh, search }: { vertical: any,
                                 <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">{search ? 'No Matches in this Department' : 'No Modules Yet'}</p>
                             </div>
                         ) : vModules.map((m: any) => (
-                            <div key={m.id} className="bg-background border border-border p-4 rounded-2xl flex flex-col gap-3 group/item hover:border-primary/30 transition-colors shadow-lg">
-                                {editMode === m.id ? (
-                                    <div className="flex flex-col gap-3">
-                                        <input 
-                                            className="w-full h-10 bg-surface border border-primary/50 rounded-xl px-4 text-white text-xs font-mono outline-none focus:border-primary" 
-                                            value={editCode} 
-                                            onChange={e => setEditCode(e.target.value)} 
-                                            placeholder="Code"
-                                        />
-                                        <input 
-                                            className="w-full h-10 bg-surface border border-primary/50 rounded-xl px-4 text-white text-xs outline-none focus:border-primary" 
-                                            value={editName} 
-                                            onChange={e => setEditName(e.target.value)} 
-                                            placeholder="Name"
-                                        />
-                                        <textarea
-                                            className="w-full bg-surface border border-primary/50 rounded-xl p-4 text-white text-xs outline-none focus:border-primary resize-none min-h-[80px]" 
-                                            value={editDescription} 
-                                            onChange={e => setEditDescription(e.target.value)} 
-                                            placeholder="Module Description..."
-                                        />
-                                        <div className="flex gap-2 justify-end mt-1">
-                                            <button onClick={() => setEditMode(null)} className="flex-1 h-10 rounded-xl bg-surface border border-border text-gray-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1"><X size={14}/> Cancel</button>
-                                            <button onClick={() => handleUpdate(m.id)} className="flex-1 h-10 rounded-xl bg-primary/20 text-primary border border-primary/30 hover:bg-primary hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1"><Check size={14}/> Save</button>
-                                        </div>
+                            <div 
+                                key={m.id} 
+                                className="bg-background border border-border p-4 rounded-2xl flex flex-col gap-3 group/item hover:border-primary/40 transition-colors shadow-lg cursor-pointer"
+                                onClick={() => onSelectModule(m)}
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 text-primary shadow-inner">
+                                        <FolderTree size={18} />
                                     </div>
-                                ) : (
-                                    <>
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-10 h-10 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 text-primary shadow-inner">
-                                                <FolderTree size={18} />
-                                            </div>
-                                            <div className="flex-1 min-w-0 pt-0.5">
-                                                <h4 className="text-white font-bold text-sm leading-tight flex flex-col items-start gap-1.5">
-                                                    <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono text-[10px] uppercase tracking-widest">{m.code}</span>
-                                                    <span className="truncate block max-w-full">{m.name}</span>
-                                                </h4>
-                                                {m.description && (
-                                                    <p className="text-[10px] text-gray-400 mt-3 leading-relaxed whitespace-pre-wrap bg-surface p-2.5 rounded-lg border border-border/50 shadow-inner">{m.description}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                                            <button onClick={() => startEdit(m)} className="flex-1 h-9 rounded-lg bg-surface border border-border text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-widest"><Edit3 size={14} /> Edit</button>
-                                            <button onClick={() => handleDelete(m.id)} className="flex-1 h-9 rounded-lg bg-danger/10 border border-danger/20 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-widest"><Trash2 size={14} /> Delete</button>
-                                        </div>
-                                    </>
-                                )}
+                                    <div className="flex-1 min-w-0 pt-0.5">
+                                        <h4 className="text-white font-bold text-sm leading-tight flex flex-col items-start gap-1.5">
+                                            <span className="text-primary bg-primary/10 px-2 py-0.5 rounded-md font-mono text-[10px] uppercase tracking-widest">{m.code}</span>
+                                            <span className="truncate block max-w-full group-hover/item:text-primary transition-colors">{m.name}</span>
+                                        </h4>
+                                        {m.description && (
+                                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed whitespace-pre-wrap bg-surface p-2.5 rounded-lg border border-border/50 shadow-inner line-clamp-2">{m.description}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-3 border-t border-border/50 mt-1">
+                                    <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest px-2 group-hover/item:text-white transition-colors">Tap to View/Edit Details</span>
+                                    <button onClick={(e) => handleDelete(m.id, e)} className="h-8 px-3 rounded-lg bg-danger/10 border border-danger/20 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center gap-1.5 text-[9px] uppercase font-bold tracking-widest"><Trash2 size={12} /> Delete</button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -171,6 +178,7 @@ export default function ModulesPage() {
     const [modules, setModules] = useState<any[]>([]);
     const [fetching, setFetching] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedModule, setSelectedModule] = useState<any>(null);
 
     const fetchData = async () => {
         setFetching(true);
@@ -195,12 +203,20 @@ export default function ModulesPage() {
     const filteredVerticals = search 
         ? verticals.filter(v => 
             v.name.toLowerCase().includes(search.toLowerCase()) || 
-            modules.some((m:any) => m.vertical_id === v.id && (m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase())))
+            modules.some((m:any) => m.vertical_id === v.id && (m.name.toLowerCase().includes(search.toLowerCase()) || m.code.toLowerCase().includes(search.toLowerCase()) || m.description?.toLowerCase().includes(search.toLowerCase())))
           )
         : verticals;
 
     return (
-        <div className="p-4 md:p-8 space-y-6 md:space-y-10">
+        <div className="p-4 md:p-8 space-y-6 md:space-y-10 relative">
+            {selectedModule && (
+                <ModuleModal 
+                    module={selectedModule} 
+                    onClose={() => setSelectedModule(null)} 
+                    onRefresh={fetchData} 
+                />
+            )}
+
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
@@ -238,6 +254,7 @@ export default function ModulesPage() {
                             modules={modules} 
                             onRefresh={fetchData} 
                             search={search}
+                            onSelectModule={setSelectedModule}
                         />
                     ))}
                 </div>
@@ -245,4 +262,3 @@ export default function ModulesPage() {
         </div>
     );
 }
-
