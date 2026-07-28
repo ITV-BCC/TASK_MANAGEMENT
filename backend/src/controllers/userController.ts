@@ -145,6 +145,41 @@ export const resetPassword = async (req: AuthRequest, res: Response): Promise<vo
 };
 
 // ==========================================
+// Change Own Password
+// ==========================================
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.id;
+        const { current_password, new_password } = req.body;
+
+        if (!current_password || !new_password || new_password.length < 6) {
+            res.status(400).json({ success: false, message: 'Invalid input. New password must be at least 6 characters.' });
+            return;
+        }
+
+        const userCheck = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+        if (userCheck.rowCount === 0) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        const isValid = await bcrypt.compare(current_password, userCheck.rows[0].password_hash);
+        if (!isValid) {
+            res.status(401).json({ success: false, message: 'Incorrect current password.' });
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(new_password, 10);
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+
+        res.status(200).json({ success: true, message: 'Password changed successfully.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not change password.' });
+    }
+};
+
+// ==========================================
 // Toggle User Active/Inactive (Admin Only)
 // ==========================================
 export const toggleUserStatus = async (req: AuthRequest, res: Response): Promise<void> => {

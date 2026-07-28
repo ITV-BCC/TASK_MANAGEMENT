@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { User, Lock, Mail, Shield, Save, CheckCircle, Smartphone } from 'lucide-react';
+import { User, Lock, Mail, Shield, Save, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import api from '../../api';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+  const [user, setUser] = useState(JSON.parse(sessionStorage.getItem('user') || '{}'));
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({
     first_name: user.first_name || '',
-    phone_number: user.phone_number || '',
+    email: user.email || '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+  const [showPwd, setShowPwd] = useState(false);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,6 @@ export default function ProfilePage() {
       // 1. Update Profile Info
       await api.put(`/users/${user.id}`, {
         first_name: form.first_name,
-        phone_number: form.phone_number,
         role: user.role,
         vertical_id: user.vertical_id,
         is_active: true
@@ -33,18 +33,24 @@ export default function ProfilePage() {
       if (form.newPassword) {
         if (form.newPassword !== form.confirmPassword) {
           alert('New passwords do not match');
+          setLoading(false);
           return;
         }
-        // For security, we'll use our existing reset-password or add a dedicated update-password endpoint
-        // For now, let's assume update profile also handles password if sent
-        // (I will update the backend controller next)
-        await api.put(`/users/${user.id}/reset-password`, { new_password: form.newPassword });
+        if (!form.currentPassword) {
+          alert('Current password is required to set a new password');
+          setLoading(false);
+          return;
+        }
+        await api.put(`/users/change-password`, { 
+          current_password: form.currentPassword, 
+          new_password: form.newPassword 
+        });
       }
 
       setSuccess(true);
-      // Update local storage
-      const updatedUser = { ...user, first_name: form.first_name, phone_number: form.phone_number };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Update session storage
+      const updatedUser = { ...user, first_name: form.first_name };
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
 
       setForm({ ...form, currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -75,13 +81,15 @@ export default function ProfilePage() {
           <p className="text-gray-500 text-xs mt-1 uppercase tracking-widest font-black">{user.role.replace('_', ' ')}</p>
 
           <div className="mt-8 w-full space-y-3">
-            <div className="bg-background/50 p-4 rounded-2xl border border-border flex items-center gap-3">
-              <Mail size={14} className="text-gray-600" />
-              <span className="text-xs text-gray-400 truncate">{user.email}</span>
-            </div>
+            {user.email && (
+              <div className="bg-background/50 p-4 rounded-2xl border border-border flex items-center gap-3">
+                <Mail size={14} className="text-gray-600" />
+                <span className="text-xs text-gray-400 truncate">{user.email}</span>
+              </div>
+            )}
             <div className="bg-background/50 p-4 rounded-2xl border border-border flex items-center gap-3">
               <Shield size={14} className="text-gray-600" />
-              <span className="text-xs text-gray-400 uppercase font-bold tracking-tighter">{user.vertical_name || 'System Wide'}</span>
+              <span className="text-xs text-gray-400 uppercase font-bold tracking-tighter">{user.vertical_name || 'Full System Access'}</span>
             </div>
           </div>
         </div>
@@ -103,15 +111,16 @@ export default function ProfilePage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-600 uppercase font-black tracking-widest px-2">Phone Link</label>
+                <label className="text-[10px] text-gray-600 uppercase font-black tracking-widest px-2">Email Address</label>
                 <div className="relative">
                   <input
-                    type="text"
+                    type="email"
                     className="w-full h-14 bg-background border border-border rounded-2xl px-12 text-white outline-none focus:border-primary transition-all shadow-inner"
-                    value={form.phone_number}
-                    onChange={e => setForm({ ...form, phone_number: e.target.value })}
+                    value={form.email}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
+                    disabled
                   />
-                  <Smartphone size={16} className="absolute left-6 top-5 text-gray-600" />
+                  <Mail size={16} className="absolute left-6 top-5 text-gray-600" />
                 </div>
               </div>
             </div>
@@ -119,23 +128,49 @@ export default function ProfilePage() {
 
           <div className="space-y-6 pt-6 border-t border-border">
             <h4 className="text-white font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
-              <Lock size={14} className="text-secondary" /> Authentication Hash (Change Password)
+              <Lock size={14} className="text-secondary" /> Change Password
             </h4>
             <div className="space-y-4">
-              <input
-                type="password"
-                placeholder="New Password (Leave blank to keep current)"
-                className="w-full h-14 bg-background border border-border rounded-2xl px-6 text-white outline-none focus:border-secondary transition-all shadow-inner"
-                value={form.newPassword}
-                onChange={e => setForm({ ...form, newPassword: e.target.value })}
-              />
-              <input
-                type="password"
-                placeholder="Confirm New Password"
-                className="w-full h-14 bg-background border border-border rounded-2xl px-6 text-white outline-none focus:border-secondary transition-all shadow-inner"
-                value={form.confirmPassword}
-                onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
-              />
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-600 uppercase font-black tracking-widest px-2">Current Password</label>
+                <div className="relative">
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Enter current password..."
+                    className="w-full h-14 bg-background border border-border rounded-2xl px-6 text-white outline-none focus:border-secondary transition-all shadow-inner pr-12"
+                    value={form.currentPassword}
+                    onChange={e => setForm({ ...form, currentPassword: e.target.value })}
+                  />
+                  <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 top-4 text-gray-500 hover:text-white">
+                    {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-600 uppercase font-black tracking-widest px-2">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    placeholder="New password..."
+                    className="w-full h-14 bg-background border border-border rounded-2xl px-6 text-white outline-none focus:border-secondary transition-all shadow-inner pr-12"
+                    value={form.newPassword}
+                    onChange={e => setForm({ ...form, newPassword: e.target.value })}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-500 px-2">Password must be at least 6 characters long.</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-600 uppercase font-black tracking-widest px-2">Confirm New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Re-enter new password..."
+                    className="w-full h-14 bg-background border border-border rounded-2xl px-6 text-white outline-none focus:border-secondary transition-all shadow-inner pr-12"
+                    value={form.confirmPassword}
+                    onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -151,7 +186,7 @@ export default function ProfilePage() {
               disabled={loading}
               className="ml-auto bg-white text-black px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50"
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Update Protocol
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Save Changes
             </button>
           </div>
         </form>

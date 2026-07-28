@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 
 export default function Dashboard() {
   // Protect the route - if not logged in, send them back to login
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) {
     window.location.href = '/login';
     return null;

@@ -16,7 +16,7 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
         }
 
         // Use the vertical_id provided (if Global Admin) or force the Admin's own vertical
-        const finalVerticalId = userRole === 'GLOBAL_ADMIN' ? vertical_id : req.user?.vertical_id;
+        const finalVerticalId = userRole === 'GLOBAL_ADMIN' ? (vertical_id || null) : req.user?.vertical_id;
 
         const result = await pool.query(
             "INSERT INTO tasks (vertical_id, created_by, title, description, priority, due_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
@@ -158,13 +158,9 @@ export const getTasks = async (req: AuthRequest, res: Response): Promise<void> =
         let params: any[] = [];
 
         // 1. Role-based scoping
-        if (req.user?.role === 'EMPLOYEE') {
-            fromClause += ` JOIN task_assignments ta ON t.id = ta.task_id`;
-            params.push(req.user.id);
-            whereClauses.push(`ta.employee_id = $${params.length}`);
-        } else if (req.user?.role !== 'GLOBAL_ADMIN') {
+        if (req.user?.role !== 'GLOBAL_ADMIN') {
             params.push(req.user?.vertical_id);
-            whereClauses.push(`t.vertical_id = $${params.length}`);
+            whereClauses.push(`(t.vertical_id = $${params.length} OR t.vertical_id IS NULL)`);
         }
 
         // 2. Search filter
@@ -243,3 +239,67 @@ export const getTasks = async (req: AuthRequest, res: Response): Promise<void> =
         res.status(500).json({ success: false, message: 'Could not fetch tasks' });
     }
 };
+
+// ==========================================
+// Delete Task(s)
+// ==========================================
+export const deleteTasks = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { task_ids } = req.body;
+        
+        if (req.user?.role === 'EMPLOYEE') {
+            res.status(403).json({ success: false, message: 'Employees cannot delete tasks' });
+            return;
+        }
+
+        if (!task_ids || task_ids.length === 0) {
+            res.status(400).json({ success: false, message: 'No tasks specified' });
+            return;
+        }
+
+        await pool.query("DELETE FROM tasks WHERE id = ANY($1::uuid[])", [task_ids]);
+        res.status(200).json({ success: true, message: 'Tasks deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not delete tasks' });
+    }
+};
+
+// ==========================================
+// Bulk Assign Tasks
+// ==========================================
+export const bulkAssignTasks = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { task_ids, employee_id } = req.body; 
+
+        if (req.user?.role === 'EMPLOYEE') {
+            res.status(403).json({ success: false, message: 'Employees cannot assign tasks.' });
+            return;
+        }
+
+        if (!task_ids || task_ids.length === 0 || !employee_id) {
+            res.status(400).json({ success: false, message: 'Invalid data provided' });
+            return;
+        }
+
+        // Add assignment for each task
+        for (const task_id of task_ids) {
+            await pool.query(
+                "INSERT INTO task_assignments (task_id, employee_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                [task_id, employee_id]
+            );
+
+            // Update task status to ASSIGNED if it is currently CREATED
+            await pool.query(
+                "UPDATE tasks SET status = 'ASSIGNED', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND status = 'CREATED'",
+                [task_id]
+            );
+        }
+
+        res.status(200).json({ success: true, message: 'Tasks assigned successfully.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not assign tasks' });
+    }
+};
+

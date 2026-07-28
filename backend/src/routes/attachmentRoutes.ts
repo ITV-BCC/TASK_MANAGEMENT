@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { protect } from '../middleware/authMiddleware';
-import { uploadAttachment, getAttachments, deleteAttachment } from '../controllers/attachmentController';
+import { uploadAttachment, getAttachments, deleteAttachment, downloadAttachment } from '../controllers/attachmentController';
 
 const router = Router();
 
@@ -32,6 +32,7 @@ const upload = multer({
 
 router.post('/upload', protect, upload.single('file'), uploadAttachment);
 router.get('/:task_id', protect, getAttachments);
+router.get('/download/:id', protect, downloadAttachment);
 router.delete('/:id', protect, deleteAttachment);
 
 export default router;

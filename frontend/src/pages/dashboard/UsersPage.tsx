@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, UserMinus } from 'lucide-react';
 import api from '../../api';
 
 const ROLES = ['ADMIN', 'CO_ADMIN', 'EMPLOYEE'];
@@ -143,6 +143,7 @@ export default function UsersPage() {
   const [pwdModal, setPwdModal] = useState<{ name: string; email: string; password: string } | null>(null);
   const [resetModal, setResetModal] = useState<any | null>(null);
   const [editModal, setEditModal] = useState<any | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const fetchData = async (page = pagination.page) => {
     setFetching(true);
@@ -154,6 +155,7 @@ export default function UsersPage() {
       setUsers(uRes.data.users || []);
       if (uRes.data.pagination) setPagination(uRes.data.pagination);
       setVerticals(vRes.data.verticals || []);
+      setSelectedUsers([]);
     } catch (err) { console.error(err); }
     finally { setFetching(false); }
   };
@@ -214,6 +216,25 @@ export default function UsersPage() {
           </div>
       </div>
 
+      {selectedUsers.length > 0 && (
+          <div className="bg-danger/10 border border-danger/30 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-white ml-2">{selectedUsers.length} Users Selected</span>
+                  <button onClick={() => setSelectedUsers([])} className="text-gray-400 hover:text-white text-[9px] font-bold uppercase tracking-widest underline decoration-gray-600 underline-offset-4">Clear</button>
+              </div>
+              <button onClick={async () => {
+                  if (!confirm(`Deactivate ${selectedUsers.length} selected users?`)) return;
+                  try {
+                      await Promise.all(selectedUsers.map(id => api.put(`/users/${id}/toggle-status`, {})));
+                      setSelectedUsers([]);
+                      fetchData();
+                  } catch (err) { alert('Bulk action failed'); }
+              }} className="bg-danger/20 text-danger px-4 h-11 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-danger hover:text-white transition-all flex items-center gap-2">
+                  <UserMinus size={16}/> Toggle Access
+              </button>
+          </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
         {fetching ? (
             <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
@@ -222,9 +243,22 @@ export default function UsersPage() {
             </div>
         ) : users.length === 0 ? (
             <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Personnel Found in This Sector</div>
-        ) : users.map(u => (
-            <div key={u.id} className="bg-surface border border-border rounded-2xl md:rounded-3xl p-5 md:p-6 flex flex-col xl:flex-row xl:items-center justify-between hover:border-primary/20 transition-all group relative overflow-hidden shadow-2xl">
-                <div className="flex items-center gap-4 md:gap-6">
+        ) : users.map((u, idx) => (
+            <div key={u.id} className="bg-surface border border-border rounded-2xl md:rounded-3xl flex flex-col xl:flex-row xl:items-center hover:border-primary/20 transition-all group relative overflow-hidden shadow-2xl">
+
+                {/* S.No + Checkbox Panel */}
+                <div className="w-full xl:w-16 bg-background/50 border-b xl:border-b-0 xl:border-r border-border flex xl:flex-col items-center justify-between xl:justify-center p-3 xl:py-6 shrink-0">
+                    <span className="text-gray-500 font-black text-[10px] tracking-widest">{(pagination.page - 1) * pagination.limit + idx + 1}</span>
+                    <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(u.id)}
+                        onChange={() => setSelectedUsers(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])}
+                        className="w-5 h-5 cursor-pointer accent-primary rounded"
+                    />
+                </div>
+
+                {/* User Info */}
+                <div className="flex items-center gap-4 md:gap-6 flex-1 p-5 md:p-6">
                     <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center font-black text-xs shadow-inner shrink-0 ${roleColors[u.role]}`}>
                         {(u.first_name?.[0] || 'U')}{(u.last_name?.[0] || '')}
                     </div>
@@ -236,8 +270,8 @@ export default function UsersPage() {
                         <p className="text-[11px] md:text-xs text-gray-500 font-medium mt-1 truncate">{u.email || 'no-email'} • <span className="text-primary/70">{u.vertical_name || 'System Level Access'}</span></p>
                     </div>
                 </div>
-                
-                <div className="flex items-center justify-end xl:justify-center gap-2 mt-5 xl:mt-0 opacity-100 transition-opacity">
+
+                <div className="flex items-center justify-end xl:justify-center gap-2 mt-5 xl:mt-0 transition-opacity p-5 pt-0 md:p-6 md:pt-0 xl:p-0 xl:pr-6">
                     {!u.is_active && <span className="bg-danger/10 text-danger text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mr-2 hidden xs:block">Deactivated</span>}
                     <button onClick={() => setEditModal(u)} className="p-3 md:p-3.5 rounded-xl bg-background border border-border text-gray-500 hover:text-white transition-all shadow-sm" title="Edit Profile"><Edit2 size={16} /></button>
                     <button onClick={() => setResetModal(u)} className="p-3 md:p-3.5 rounded-xl bg-background border border-border text-gray-500 hover:text-yellow-400 transition-all shadow-sm" title="Override Key"><KeyRound size={16} /></button>

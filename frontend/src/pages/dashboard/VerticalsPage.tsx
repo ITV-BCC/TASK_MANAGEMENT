@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Building2, Trash2, Edit3, X, Check, Loader2 } from 'lucide-react';
+import { Building2, Trash2, Edit3, X, Check, Loader2 } from 'lucide-react';
 import api from '../../api';
 
 export default function VerticalsPage() {
@@ -68,8 +68,8 @@ export default function VerticalsPage() {
 
       {/* Add New - Optimized for Mobile */}
       <form onSubmit={handleAdd} className="bg-surface border border-border p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] shadow-2xl max-w-2xl group focus-within:border-primary/30 transition-all">
-         <h2 className="text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 md:mb-6 flex items-center gap-2">
-             <Plus size={14} className="text-primary" /> Add New Department
+         <h2 className="text-gray-900 dark:text-white font-black uppercase tracking-widest text-[9px] md:text-[10px] mb-4 md:mb-6">
+             Add New Department
          </h2>
          <div className="flex flex-col sm:flex-row gap-4">
             <input 

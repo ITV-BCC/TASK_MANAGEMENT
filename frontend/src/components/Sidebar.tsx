@@ -15,13 +15,13 @@ export default function Sidebar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const role = user.role || 'EMPLOYEE';
 
   const navItems = allNavItems.filter(item => item.roles.includes(role));
 
   const handleLogout = () => {
-    localStorage.clear();
+    sessionStorage.clear();
     window.location.href = '/login';
   };
 

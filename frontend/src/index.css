@@ -85,6 +85,11 @@ input, select, textarea {
   color: var(--text-main) !important;
   border-color: var(--border-color) !important;
   transition: border-color 0.2s, background-color 0.2s;
+  color-scheme: var(--theme-mode, light);
+}
+
+.dark input, .dark select, .dark textarea {
+  color-scheme: dark;
 }
 
 input:focus, select:focus, textarea:focus {

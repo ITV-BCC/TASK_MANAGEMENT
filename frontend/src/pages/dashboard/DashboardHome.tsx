@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react';
-import { ListTodo, TrendingUp, CheckCircle, Clock, Users, AlertTriangle, ArrowUpRight, Loader2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
+import { ListTodo, TrendingUp, CheckCircle, Clock, Users, AlertTriangle, ArrowUpRight, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell, PieChart, Pie } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 
 export default function DashboardHome() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [trendData, setTrendData] = useState<any[]>([]);
   const [verticalStats, setVerticalStats] = useState<any[]>([]);
   const [fetching, setFetching] = useState(true);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [trendOffset, setTrendOffset] = useState(0);
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await api.get('/stats/dashboard');
+        const res = await api.get(`/stats/dashboard?offset=${trendOffset}`);
         setStats(res.data.stats);
         setTrendData(res.data.trendData);
         setVerticalStats(res.data.verticalStats);
@@ -24,7 +27,7 @@ export default function DashboardHome() {
       }
     };
     fetchStats();
-  }, []);
+  }, [trendOffset]);
 
   if (fetching) {
      return (
@@ -82,7 +85,10 @@ export default function DashboardHome() {
         <div className="bg-surface border border-border rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl overflow-hidden">
            <div className="flex justify-between items-center mb-6 md:mb-10">
               <h4 className="text-white font-black uppercase tracking-widest text-[10px] md:text-xs">Task Completion Trend</h4>
-              <ArrowUpRight className="text-secondary" />
+              <div className="flex bg-background border border-border rounded-xl">
+                 <button onClick={() => setTrendOffset(prev => prev - 1)} className="p-2 text-gray-500 hover:text-white transition-all"><ChevronLeft size={16} /></button>
+                 <button onClick={() => setTrendOffset(prev => prev + 1)} className="p-2 text-gray-500 hover:text-white transition-all border-l border-border disabled:opacity-30" disabled={trendOffset >= 0}><ChevronRight size={16} /></button>
+              </div>
            </div>
            <div className="h-[250px] md:h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -134,14 +140,40 @@ export default function DashboardHome() {
                  </div>
             </div>
         ) : (
-            <div className="bg-primary/5 border border-primary/20 rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 flex flex-col justify-center items-center text-center space-y-4 md:space-y-6">
-                <div className="w-16 h-16 md:w-20 md:h-20 bg-primary/20 rounded-full flex items-center justify-center text-primary">
-                    <Clock size={32} />
-                </div>
-                <div>
-                   <h3 className="text-white font-black text-xl md:text-2xl tracking-tight">Your Performance</h3>
-                   <p className="text-gray-500 text-xs md:text-sm mt-2 max-w-xs md:max-w-sm">Track your assigned tasks and stay on top of deadlines to ensure team success.</p>
-                </div>
+            <div className="bg-surface border border-border rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl flex flex-col h-full overflow-hidden">
+                 <div className="flex justify-between items-center mb-6 md:mb-10">
+                    <h4 className="text-white font-black uppercase tracking-widest text-[10px] md:text-xs">Your Performance</h4>
+                    <Clock className="text-secondary" />
+                 </div>
+                 <div className="flex-1 flex justify-center items-center w-full min-h-[250px]">
+                    {stats ? (
+                       <ResponsiveContainer width="100%" height={250}>
+                          <PieChart>
+                             <Pie
+                               data={[
+                                 { name: 'In Progress', value: Number(stats.in_progress) || 0, fill: '#facc15' },
+                                 { name: 'Completed', value: Number(stats.completed) || 0, fill: '#10b981' },
+                                 { name: 'Rework', value: Number(stats.pending_rework) || 0, fill: '#ef4444' },
+                               ]}
+                               cx="50%"
+                               cy="50%"
+                               innerRadius={60}
+                               outerRadius={80}
+                               paddingAngle={5}
+                               dataKey="value"
+                             />
+                             <Tooltip 
+                               contentStyle={{ background: '#0a0a1a', border: '1px solid #ffffff10', borderRadius: '15px' }}
+                               itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                             />
+                          </PieChart>
+                       </ResponsiveContainer>
+                    ) : (
+                       <div className="text-center">
+                          <p className="text-gray-500 text-xs mt-2 max-w-xs md:max-w-sm">No data available.</p>
+                       </div>
+                    )}
+                 </div>
             </div>
         )}
       </div>
@@ -157,7 +189,7 @@ export default function DashboardHome() {
                   <p className="text-gray-500 text-[10px] md:text-xs font-medium">Manage objectives, resources, and departments.</p>
               </div>
           </div>
-          <button className="bg-white text-black px-8 h-12 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:scale-105 transition-transform shadow-2xl whitespace-nowrap">View All Tasks</button>
+          <button onClick={() => navigate('/dashboard/tasks')} className="bg-white text-black px-8 h-12 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:scale-105 transition-transform shadow-2xl whitespace-nowrap">View All Tasks</button>
       </div>
     </div>
   );

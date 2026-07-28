@@ -37,10 +37,11 @@ export default function TasksPage() {
   const [newComment, setNewComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [assignModal, setAssignModal] = useState<{ open: boolean; task: any | null }>({ open: false, task: null });
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_id: '' });
+  const [taskForm, setTaskForm] = useState<{ title: string, description: string, priority: string, due_date: string, vertical_ids: string[] }>({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [] });
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const safeFetch = async (page = pagination.page) => {
     setFetching(true);
@@ -53,7 +54,9 @@ export default function TasksPage() {
       setTasks(tRes.data.tasks || []);
       if (tRes.data.pagination) setPagination(tRes.data.pagination);
       setVerticals(vRes.data.verticals || []);
+      setVerticals(vRes.data.verticals || []);
       setUsers(uRes.data.users || []);
+      setSelectedTasks([]);
     } finally { setFetching(false); }
   };
 
@@ -67,15 +70,37 @@ export default function TasksPage() {
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        await api.post('/tasks', taskForm);
+        if (user.role === 'GLOBAL_ADMIN') {
+            if (taskForm.vertical_ids.length === 0) {
+               // Global Task
+               await api.post('/tasks', { ...taskForm, vertical_id: null });
+            } else {
+               // Assign to selected verticals
+               await Promise.all(taskForm.vertical_ids.map(vid => api.post('/tasks', { ...taskForm, vertical_id: vid })));
+            }
+        } else {
+            // Normal admin, takes their own vertical, handled by backend
+            await api.post('/tasks', taskForm);
+        }
         setShowTaskForm(false);
-        setTaskForm({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_id: '' });
+        setTaskForm({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [] });
         safeFetch();
-    } catch (err) { console.error(err); alert('Failed to create task'); }
+    } catch (err) { console.error(err); alert('Failed to create task(s)'); }
   };
 
   const handleAssignTask = async (userId: string) => {
     if (!assignModal.task) return;
+    
+    if (assignModal.task.id === 'BULK_ASSIGN') {
+        try {
+            await api.post('/tasks/bulk-assign', { task_ids: selectedTasks, employee_id: userId });
+            setAssignModal({ open: false, task: null });
+            setSelectedTasks([]);
+            safeFetch();
+        } catch (err) { console.error(err); alert('Bulk Assign Failed'); }
+        return;
+    }
+
     try {
       const res = await api.post('/tasks/assign', { employee_id: userId, task_id: assignModal.task.id });
       const isAssigned = res.data.assigned;
@@ -123,9 +148,25 @@ export default function TasksPage() {
     }
   };
 
-  const getDownloadURL = (filePath: string) => {
-    const cleanBase = api.defaults.baseURL?.replace('/api', '') || 'https://task-management-f0f0.onrender.com';
-    return `${cleanBase}/uploads/${filePath}`;
+  const handleDownload = async (fileId: string, fileName: string) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const baseURL = api.defaults.baseURL || '';
+      const response = await fetch(`${baseURL}/attachments/download/${fileId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to download file.');
+    }
   };
 
   const openChat = async (task: any) => {
@@ -276,6 +317,26 @@ export default function TasksPage() {
           </div>
       </div>
 
+      {selectedTasks.length > 0 && (
+          <div className="bg-primary/20 border border-primary/40 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-white ml-2">{selectedTasks.length} Elements Selected</span>
+                  <button onClick={() => setSelectedTasks([])} className="text-gray-400 hover:text-white text-[9px] font-bold uppercase tracking-widest underline decoration-gray-600 underline-offset-4">Clear All</button>
+              </div>
+              <div className="flex gap-2">
+                  <button onClick={() => setAssignModal({ open: true, task: { id: 'BULK_ASSIGN' } })} className="bg-background text-primary px-4 h-11 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-surface border border-primary/20 transition-all flex items-center gap-2"><UserPlus size={16}/> Assign Resources</button>
+                  <button onClick={async () => {
+                      if (!confirm(`Are you sure you want to delete ${selectedTasks.length} tasks globally?`)) return;
+                      try {
+                          await api.post('/tasks/bulk-delete', { task_ids: selectedTasks });
+                          setSelectedTasks([]);
+                          safeFetch();
+                      } catch (err) { alert('Bulk Deletion Failed'); }
+                  }} className="bg-danger/20 text-danger px-4 h-11 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-danger hover:text-white transition-all flex items-center gap-2"><Trash2 size={16}/> Wipe Selection</button>
+              </div>
+          </div>
+      )}
+
       {/* Grid Layout */}
       <div className="grid grid-cols-1 gap-6">
         {fetching ? (
@@ -285,14 +346,26 @@ export default function TasksPage() {
             </div>
         ) : tasks.length === 0 ? (
             <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Active Vectors Detected</div>
-        ) : tasks.map(task => (
-            <div key={task.id} className="bg-surface border border-border rounded-2xl md:rounded-3xl p-5 md:p-7 flex flex-col md:flex-row gap-6 md:gap-8 hover:border-primary/20 transition-all group overflow-hidden relative shadow-2xl">
+        ) : tasks.map((task, i) => (
+            <div key={task.id} className="bg-surface border border-border rounded-2xl md:rounded-3xl flex flex-col md:flex-row hover:border-primary/20 transition-all group overflow-hidden relative shadow-2xl">
                 
+                {/* Checkbox and S.No Panel */}
+                <div className="w-full md:w-16 bg-background/50 border-b md:border-b-0 md:border-r border-border flex md:flex-col items-center justify-between md:justify-center p-4 md:py-8 shrink-0">
+                    <span className="text-gray-500 font-black text-[10px] uppercase tracking-widest mb-0 md:mb-4">{(pagination.page - 1) * pagination.limit + i + 1}</span>
+                    <input 
+                        type="checkbox" 
+                        checked={selectedTasks.includes(task.id)}
+                        onChange={() => setSelectedTasks(prev => prev.includes(task.id) ? prev.filter(tid => tid !== task.id) : [...prev, task.id])}
+                        className="w-5 h-5 cursor-pointer accent-primary border border-border bg-background rounded"
+                    />
+                </div>
+
                 {/* Task Body */}
-                <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                        <div className="flex-1">
-                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                <div className="flex-1 p-5 md:p-7 flex flex-col md:flex-row gap-6 md:gap-8">
+                    <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                            <div className="flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${priorityColors[task.priority]}`}>{task.priority}</span>
                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${statusColors[task.status]} border border-white/5`}>{task.status.replace('_', ' ')}</span>
                             </div>
@@ -357,18 +430,19 @@ export default function TasksPage() {
                     {user.role !== 'EMPLOYEE' && (
                         <button onClick={() => setAssignModal({ open: true, task })} className="w-full h-12 md:h-14 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3"><UserPlus size={18}/> {task.status === 'CREATED' ? 'Assign Direct' : 'Reassign / Edit'}</button>
                     )}
-                    {user.role === 'EMPLOYEE' && (task.status === 'ASSIGNED' || task.status === 'REWORK') && (
+                    {(user.role === 'EMPLOYEE' || user.role === 'CO_ADMIN') && (task.status === 'ASSIGNED' || task.status === 'REWORK') && (
                         <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'IN_PROGRESS' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-yellow-400 text-black rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-yellow-300 transition-all shadow-xl shadow-yellow-400/20">Initiate Workflow</button>
                     )}
-                    {user.role === 'EMPLOYEE' && task.status === 'IN_PROGRESS' && (
+                    {(user.role === 'EMPLOYEE' || user.role === 'CO_ADMIN') && task.status === 'IN_PROGRESS' && (
                         <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'COMPLETED' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-secondary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary/80 transition-all shadow-xl shadow-secondary/20">Finalize Work</button>
                     )}
-                    {user.role !== 'EMPLOYEE' && task.status === 'COMPLETED' && (
+                    {user.role !== 'EMPLOYEE' && user.role !== 'CO_ADMIN' && task.status === 'COMPLETED' && (
                         <div className="flex flex-col gap-2">
                              <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'REVIEWED' }).then(() => safeFetch())} className="h-12 bg-secondary/10 border border-secondary/30 text-secondary rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary hover:text-white transition-all flex items-center justify-center gap-3"><CheckCircle size={18}/> Approve Asset</button>
                              <button onClick={() => setReworkModal({ open: true, task, reason: '' })} className="h-12 bg-danger/10 border border-danger/30 text-danger rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-danger hover:text-white transition-all flex items-center justify-center gap-3"><RotateCcw size={18}/> Request Rework</button>
                         </div>
                     )}
+                </div>
                 </div>
             </div>
         ))}
@@ -414,18 +488,29 @@ export default function TasksPage() {
 
                     {user.role === 'GLOBAL_ADMIN' && (
                         <div className="space-y-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Department Vector</label>
-                            <select className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-2xl md:rounded-3xl px-6 md:px-8 text-white focus:border-primary outline-none" value={taskForm.vertical_id} onChange={e => setTaskForm({...taskForm, vertical_id: e.target.value})}>
-                                <option value="">Global Organization</option>
-                                {verticals.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                            </select>
+                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Department Vectors</label>
+                            <div className="bg-background/50 border border-border rounded-2xl md:rounded-3xl p-4 max-h-48 overflow-y-auto space-y-2">
+                                <label className="flex items-center gap-3 p-2 hover:bg-surface rounded-xl cursor-pointer">
+                                  <input type="checkbox" checked={taskForm.vertical_ids.length === 0} onChange={() => setTaskForm({...taskForm, vertical_ids: []})} className="w-5 h-5 accent-primary bg-surface border-border"/>
+                                  <span className="text-white text-xs font-black uppercase tracking-widest">Global Organization (All)</span>
+                                </label>
+                                {verticals.map(v => (
+                                  <label key={v.id} className="flex items-center gap-3 p-2 hover:bg-surface rounded-xl cursor-pointer">
+                                    <input type="checkbox" checked={taskForm.vertical_ids.includes(v.id)} onChange={(e) => {
+                                      if (e.target.checked) setTaskForm({...taskForm, vertical_ids: [...taskForm.vertical_ids, v.id]});
+                                      else setTaskForm({...taskForm, vertical_ids: taskForm.vertical_ids.filter(id => id !== v.id)});
+                                    }} className="w-5 h-5 accent-primary bg-surface border-border"/>
+                                    <span className="text-gray-300 text-xs font-bold uppercase tracking-wider">{v.name}</span>
+                                  </label>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
 
                 <div className="mt-12 md:mt-20 flex flex-col xs:flex-row gap-4 flex-shrink-0">
-                    <button type="submit" className="flex-1 h-16 md:h-20 bg-primary text-white rounded-2xl md:rounded-[2rem] font-black uppercase tracking-[0.3em] text-[10px] md:text-xs hover:bg-primaryHover transition-all shadow-2xl shadow-primary/20">Commit Objective</button>
-                    <button type="button" onClick={() => setShowTaskForm(false)} className="h-16 md:h-20 w-full xs:w-20 bg-background border border-border text-gray-500 rounded-2xl md:rounded-[2rem] flex items-center justify-center hover:text-white transition-all shrink-0">Cancel</button>
+                    <button type="submit" className="flex-1 h-16 md:h-20 bg-primary text-white rounded-2xl md:rounded-[2rem] font-black uppercase tracking-widest text-xs md:text-sm hover:bg-primaryHover transition-all shadow-2xl shadow-primary/20">Commit Objective</button>
+                    <button type="button" onClick={() => setShowTaskForm(false)} className="h-16 md:h-20 w-full xs:w-32 bg-background border border-border text-gray-500 rounded-2xl md:rounded-[2rem] flex items-center justify-center hover:text-white transition-all shrink-0 text-xs font-bold uppercase tracking-widest">Cancel</button>
                 </div>
             </form>
         </div>
@@ -443,7 +528,7 @@ export default function TasksPage() {
                     <button onClick={() => setAssignModal({ open: false, task: null })} className="text-gray-500 hover:text-white"><X size={20}/></button>
                 </div>
                 <div className="space-y-2 md:space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                    {users.filter(u => u.role === 'EMPLOYEE' && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => {
+                    {users.filter(u => (u.role === 'EMPLOYEE' || u.role === 'CO_ADMIN') && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => {
                         const isAssigned = assignModal.task?.assigned_users?.some((u: any) => u.id === emp.id);
                         return (
                             <button key={emp.id} onClick={() => handleAssignTask(emp.id)} className={`w-full p-4 md:p-5 bg-background border rounded-xl md:rounded-2xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
@@ -513,7 +598,7 @@ export default function TasksPage() {
         <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[140] flex items-center justify-center p-4">
             <div className="bg-surface border border-border rounded-[2rem] md:rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
                 <div className="p-6 md:p-10 border-b border-border flex justify-between items-center bg-background/50">
-                    <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">Asset Storage</h2>
+                    <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">File Upload</h2>
                     <button onClick={() => setAttachModal({ open: false, task: null, data: [] })} className="p-3 bg-background border border-border text-gray-500 hover:text-white rounded-xl md:rounded-2xl transition-all"><X size={20}/></button>
                 </div>
                 <div className="p-6 md:p-10 space-y-3 md:space-y-4 max-h-[60vh] overflow-y-auto">
@@ -524,7 +609,7 @@ export default function TasksPage() {
                                 <p className="text-[9px] text-gray-600 font-bold uppercase mt-1">By {f.first_name}</p>
                             </div>
                             <div className="flex gap-1.5 md:gap-2">
-                                <a href={getDownloadURL(f.file_path)} target="_blank" rel="noreferrer" className="p-3 bg-surface text-gray-400 hover:text-secondary rounded-xl md:rounded-2xl transition-all" title="Download System Asset"><Download size={14}/></a>
+                                <button onClick={() => handleDownload(f.id, f.file_name)} className="p-3 bg-surface text-gray-400 hover:text-secondary rounded-xl md:rounded-2xl transition-all" title="Download File"><Download size={14}/></button>
                                 {(user.id === f.uploaded_by || user.role === 'GLOBAL_ADMIN') && <button onClick={() => deleteFile(f.id)} className="p-3 bg-surface text-gray-400 hover:text-danger rounded-xl md:rounded-2xl transition-all"><Trash2 size={14}/></button>}
                             </div>
                         </div>
@@ -532,7 +617,7 @@ export default function TasksPage() {
                     <div className="mt-4 pt-4 border-t border-border/30">
                          <input type="file" onChange={handleFileUpload} className="hidden" id="task-upload" />
                          <label htmlFor="task-upload" className="w-full h-14 md:h-16 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-3 text-gray-500 font-black uppercase tracking-widest text-[9px] cursor-pointer hover:border-secondary hover:text-secondary transition-all">
-                             {uploading ? <Loader2 className="animate-spin" size={18}/> : <Upload size={18}/>} {uploading ? 'Processing...' : 'Add Support File'}
+                             {uploading ? <Loader2 className="animate-spin" size={18}/> : <Upload size={18}/>} {uploading ? 'Processing...' : 'File Upload'}
                          </label>
                     </div>
                 </div>
@@ -564,18 +649,34 @@ export default function TasksPage() {
               <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">Audit Chronology</h2>
               <button onClick={() => setHistoryModal({ open: false, task: null, data: [] })} className="text-gray-500 hover:text-white"><X size={20}/></button>
             </div>
-            <div className="p-6 md:p-10 max-h-[60vh] overflow-y-auto space-y-8 relative custom-scrollbar">
-              <div className="absolute left-[39px] md:left-[59px] top-10 bottom-10 w-px bg-border -z-0 opacity-50"></div>
+            <div className="p-6 md:p-10 max-h-[60vh] overflow-y-auto space-y-6 relative custom-scrollbar">
+              {/* Connector Line */}
+              <div className="absolute left-[51px] md:left-[51px] top-10 bottom-10 w-0.5 bg-border opacity-40"></div>
               {historyModal.data.map((h, i) => (
-                <div key={i} className="flex gap-6 md:gap-10 relative z-10">
-                   <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full border-2 border-surface flex-shrink-0 mt-1 md:mt-0.5 ${i === 0 ? 'bg-primary ring-4 ring-primary/10' : 'bg-gray-700'}`}></div>
-                   <div className="flex-1">
-                     <p className="text-white text-xs md:text-sm font-black uppercase tracking-tight flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {h.new_status.replace('_', ' ')}
-                        <span className="text-[9px] text-gray-600 font-mono italic">{new Date(h.changed_at).toLocaleString()}</span>
-                     </p>
-                     {h.remark && <p className="text-[10px] md:text-[11px] text-danger font-bold bg-danger/5 border border-danger/10 px-3 py-2 rounded-xl mt-2 leading-relaxed">"{h.remark}"</p>}
-                     <p className="text-[9px] text-gray-500 mt-2 font-black uppercase tracking-widest opacity-60">Operator: {h.first_name}</p>
+                <div key={i} className="flex gap-6 relative z-10 items-start">
+                   {/* Milestone Dot */}
+                   <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border-2 shadow-lg ${
+                     i === 0
+                       ? 'bg-primary border-primary ring-4 ring-primary/20 shadow-primary/30'
+                       : h.new_status === 'COMPLETED' || h.new_status === 'REVIEWED'
+                       ? 'bg-secondary border-secondary ring-2 ring-secondary/20'
+                       : h.new_status === 'REWORK'
+                       ? 'bg-danger border-danger ring-2 ring-danger/20'
+                       : h.new_status === 'IN_PROGRESS'
+                       ? 'bg-yellow-400 border-yellow-400 ring-2 ring-yellow-400/20'
+                       : 'bg-gray-700 border-gray-600'
+                   }`}>
+                     <div className="w-2 h-2 rounded-full bg-white opacity-90"></div>
+                   </div>
+                   <div className="flex-1 pb-2">
+                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
+                       <p className="text-white text-xs md:text-sm font-black uppercase tracking-tight">
+                         {h.new_status.replace(/_/g, ' ')}
+                       </p>
+                       <span className="text-[9px] text-gray-500 font-mono italic">{new Date(h.changed_at).toLocaleString()}</span>
+                     </div>
+                     {h.remark && <p className="text-[10px] md:text-[11px] text-danger font-bold bg-danger/5 border border-danger/10 px-3 py-2 rounded-xl mt-1 mb-1 leading-relaxed">"{h.remark}"</p>}
+                     <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest opacity-60">By: {h.first_name}</p>
                    </div>
                 </div>
               ))}

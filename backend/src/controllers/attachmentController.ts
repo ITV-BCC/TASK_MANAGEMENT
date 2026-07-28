@@ -79,3 +79,35 @@ export const deleteAttachment = async (req: AuthRequest, res: Response): Promise
         res.status(500).json({ success: false, message: 'Could not delete attachment' });
     }
 };
+
+// ==========================================
+// Download Attachment (forces browser download)
+// ==========================================
+export const downloadAttachment = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const fileCheck = await pool.query(
+            "SELECT file_path, file_name FROM task_attachments WHERE id = $1",
+            [id]
+        );
+        if (fileCheck.rowCount === 0) {
+            res.status(404).json({ success: false, message: 'File not found' });
+            return;
+        }
+
+        const filePath = path.join(__dirname, '../../uploads', fileCheck.rows[0].file_path);
+        const originalName = fileCheck.rows[0].file_name;
+
+        if (!fs.existsSync(filePath)) {
+            res.status(404).json({ success: false, message: 'File not found on disk' });
+            return;
+        }
+
+        res.download(filePath, originalName);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not download file' });
+    }
+};
+
