@@ -10,6 +10,7 @@ import taskRoutes from './routes/taskRoutes';
 import statsRoutes from './routes/statsRoutes';
 import attachmentRoutes from './routes/attachmentRoutes';
 import commentRoutes from './routes/commentRoutes';
+import moduleRoutes from './routes/moduleRoutes';
 import path from 'path';
 
 // Load environment variables
@@ -46,6 +47,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/modules', moduleRoutes);
 
 // Serve Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

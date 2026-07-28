@@ -6,6 +6,7 @@ import DashboardHome from './pages/dashboard/DashboardHome';
 import TasksPage from './pages/dashboard/TasksPage';
 import UsersPage from './pages/dashboard/UsersPage';
 import VerticalsPage from './pages/dashboard/VerticalsPage';
+import ModulesPage from './pages/dashboard/ModulesPage';
 import ProfilePage from './pages/dashboard/ProfilePage';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
               <Route path="tasks" element={<TasksPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="verticals" element={<VerticalsPage />} />
+              <Route path="modules" element={<ModulesPage />} />
               <Route path="profile" element={<ProfilePage />} />
           </Route>
         </Routes>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree } from 'lucide-react';
 import api from '../../api';
 import * as XLSX from 'xlsx';
 
@@ -37,8 +37,9 @@ export default function TasksPage() {
   const [newComment, setNewComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [assignModal, setAssignModal] = useState<{ open: boolean; task: any | null }>({ open: false, task: null });
-  const [taskForm, setTaskForm] = useState<{ title: string, description: string, priority: string, due_date: string, vertical_ids: string[] }>({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [] });
+  const [taskForm, setTaskForm] = useState<{ title: string, description: string, priority: string, due_date: string, vertical_ids: string[], module_id: string }>({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [], module_id: '' });
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [formModules, setFormModules] = useState<any[]>([]);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -73,20 +74,34 @@ export default function TasksPage() {
         if (user.role === 'GLOBAL_ADMIN') {
             if (taskForm.vertical_ids.length === 0) {
                // Global Task
-               await api.post('/tasks', { ...taskForm, vertical_id: null });
+               await api.post('/tasks', { ...taskForm, vertical_id: null, module_id: taskForm.module_id || null });
             } else {
                // Assign to selected verticals
-               await Promise.all(taskForm.vertical_ids.map(vid => api.post('/tasks', { ...taskForm, vertical_id: vid })));
+               await Promise.all(taskForm.vertical_ids.map(vid => api.post('/tasks', { ...taskForm, vertical_id: vid, module_id: taskForm.module_id || null })));
             }
         } else {
             // Normal admin, takes their own vertical, handled by backend
-            await api.post('/tasks', taskForm);
+            await api.post('/tasks', { ...taskForm, module_id: taskForm.module_id || null });
         }
         setShowTaskForm(false);
-        setTaskForm({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [] });
+        setTaskForm({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [], module_id: '' });
+        setFormModules([]);
         safeFetch();
     } catch (err) { console.error(err); alert('Failed to create task(s)'); }
   };
+
+  // Fetch modules when a single vertical is selected in form
+  useEffect(() => {
+    if (taskForm.vertical_ids.length === 1) {
+      api.get(`/modules?vertical_id=${taskForm.vertical_ids[0]}`).then(r => setFormModules(r.data.modules || [])).catch(() => setFormModules([]));
+    } else if (user.role !== 'GLOBAL_ADMIN') {
+      // For admins (non global) fetch their own vertical's modules
+      api.get(`/modules?vertical_id=${user.vertical_id}`).then(r => setFormModules(r.data.modules || [])).catch(() => setFormModules([]));
+    } else {
+      setFormModules([]);
+      setTaskForm(prev => ({ ...prev, module_id: '' }));
+    }
+  }, [taskForm.vertical_ids]);
 
   const handleAssignTask = async (userId: string) => {
     if (!assignModal.task) return;
@@ -375,31 +390,37 @@ export default function TasksPage() {
                             <p className="text-gray-500 text-sm mt-2 leading-relaxed max-w-2xl">{task.description}</p>
                             
                             {/* Metadata Row */}
-                            <div className="flex flex-wrap items-center gap-y-2 gap-x-6 mt-4">
-                                 <div className="flex items-center gap-1.5 font-bold">
-                                    <Target size={12} className="text-gray-600" />
-                                    <span className="text-[10px] text-gray-500 font-black uppercase">{task.vertical_name || 'System Wide'}</span>
-                                 </div>
-                                 {task.due_date && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Calendar size={12} className="text-gray-600" />
-                                        <span className="text-[10px] text-gray-500 font-black uppercase">Due {new Date(task.due_date).toLocaleDateString()}</span>
-                                    </div>
-                                 )}
-                                 {task.assigned_users && task.assigned_users.length > 0 && (
-                                    <div className="flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
-                                        <div className="flex -space-x-1.5 overflow-hidden mr-1">
-                                            {task.assigned_users.map((u: any) => (
-                                                <div key={u.id} className="w-5 h-5 rounded-full bg-primary/20 text-primary border border-surface flex items-center justify-center text-[8px] font-black uppercase" title={`${u.first_name} ${u.last_name || ''}`}>
-                                                    {u.first_name[0]}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <span className="text-[9px] text-primary/80 font-black uppercase tracking-wider">
-                                            Assigned: {task.assigned_users.map((u: any) => u.first_name).join(', ')}
-                                        </span>
-                                    </div>
-                                 )}
+                             <div className="flex flex-wrap items-center gap-y-2 gap-x-6 mt-4">
+                                  <div className="flex items-center gap-1.5 font-bold">
+                                     <Target size={12} className="text-gray-600" />
+                                     <span className="text-[10px] text-gray-500 font-black uppercase">{task.vertical_name || 'System Wide'}</span>
+                                  </div>
+                                  {task.module_code && (
+                                     <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
+                                         <FolderTree size={11} className="text-primary/70" />
+                                         <span className="text-[10px] text-primary font-black uppercase tracking-widest">{task.module_code} · {task.module_name}</span>
+                                     </div>
+                                  )}
+                                  {task.due_date && (
+                                     <div className="flex items-center gap-1.5">
+                                         <Calendar size={12} className="text-gray-600" />
+                                         <span className="text-[10px] text-gray-500 font-black uppercase">Due {new Date(task.due_date).toLocaleDateString()}</span>
+                                     </div>
+                                  )}
+                                  {task.assigned_users && task.assigned_users.length > 0 && (
+                                     <div className="flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
+                                         <div className="flex -space-x-1.5 overflow-hidden mr-1">
+                                             {task.assigned_users.map((u: any) => (
+                                                 <div key={u.id} className="w-5 h-5 rounded-full bg-primary/20 text-primary border border-surface flex items-center justify-center text-[8px] font-black uppercase" title={`${u.first_name} ${u.last_name || ''}`}>
+                                                     {u.first_name[0]}
+                                                 </div>
+                                             ))}
+                                         </div>
+                                         <span className="text-[9px] text-primary/80 font-black uppercase tracking-wider">
+                                             Assigned: {task.assigned_users.map((u: any) => u.first_name).join(', ')}
+                                         </span>
+                                     </div>
+                                  )}
                             </div>
                         </div>
 
@@ -504,6 +525,23 @@ export default function TasksPage() {
                                   </label>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Module Selection - shows when exactly 1 vertical selected or non-global admin */}
+                    {formModules.length > 0 && (
+                        <div className="space-y-3">
+                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Module <span className="text-gray-600 normal-case font-normal">(optional)</span></label>
+                            <select
+                                className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-2xl md:rounded-3xl px-6 md:px-8 text-white focus:border-primary outline-none"
+                                value={taskForm.module_id}
+                                onChange={e => setTaskForm({...taskForm, module_id: e.target.value})}
+                            >
+                                <option value="">— No Module (General) —</option>
+                                {formModules.map(m => (
+                                    <option key={m.id} value={m.id}>{m.code} · {m.name}</option>
+                                ))}
+                            </select>
                         </div>
                     )}
                 </div>

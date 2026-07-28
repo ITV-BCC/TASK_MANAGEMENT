@@ -7,7 +7,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 // ==========================================
 export const createTask = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { title, description, priority, due_date, vertical_id } = req.body;
+        const { title, description, priority, due_date, vertical_id, module_id } = req.body;
         const userRole = req.user?.role;
 
         if (userRole === 'EMPLOYEE') {
@@ -19,8 +19,8 @@ export const createTask = async (req: AuthRequest, res: Response): Promise<void>
         const finalVerticalId = userRole === 'GLOBAL_ADMIN' ? (vertical_id || null) : req.user?.vertical_id;
 
         const result = await pool.query(
-            "INSERT INTO tasks (vertical_id, created_by, title, description, priority, due_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-            [finalVerticalId, req.user?.id, title, description, priority || 'MEDIUM', due_date]
+            "INSERT INTO tasks (title, description, priority, due_date, vertical_id, created_by, module_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+            [title, description, priority || 'MEDIUM', due_date || null, finalVerticalId, req.user?.id, module_id || null]
         );
 
         res.status(201).json({ success: true, task: result.rows[0] });
@@ -139,12 +139,14 @@ export const getTasks = async (req: AuthRequest, res: Response): Promise<void> =
 
         let selectFields = `
             t.*, v.name as vertical_name,
+            m.code as module_code, m.name as module_name,
             COALESCE(sub_assign.assigned_users, '[]'::json) as assigned_users
         `;
 
         let fromClause = `
             tasks t
             LEFT JOIN verticals v ON t.vertical_id = v.id
+            LEFT JOIN modules m ON t.module_id = m.id
             LEFT JOIN (
                 SELECT ta.task_id, 
                        JSON_AGG(JSON_BUILD_OBJECT('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as assigned_users
