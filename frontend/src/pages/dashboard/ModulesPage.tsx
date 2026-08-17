@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Loader2, FolderTree, Trash2, X, Plus, Search, Calendar, User, Edit3, ArrowLeft, Building2, ChevronRight, Layers, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, FolderTree, Trash2, X, Plus, Search, Calendar, User, Edit3, ArrowLeft, Building2, ChevronRight, Layers } from 'lucide-react';
 import api from '../../api';
 
 function ModuleModal({ module, users, onClose, onRefresh }: { module: any, users: any[], onClose: () => void, onRefresh: () => void }) {
