@@ -148,6 +148,7 @@ export default function UsersPage() {
   const [resetModal, setResetModal] = useState<any | null>(null);
   const [editModal, setEditModal] = useState<any | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [jumpPage, setJumpPage] = useState('');
 
   // When CO_ADMIN opens the form, pre-fill their own vertical
   const openAddForm = () => {
@@ -157,6 +158,15 @@ export default function UsersPage() {
       setForm({ first_name: '', last_name: '', email: '', password: '', role: 'EMPLOYEE', vertical_id: '' });
     }
     setShowTaskForm(true);
+  };
+
+  const handleJumpPage = (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = parseInt(jumpPage);
+    if (!isNaN(p) && p >= 1 && p <= (pagination.pages || 1)) {
+      fetchData(p, pagination.limit);
+      setJumpPage('');
+    }
   };
 
   const fetchData = async (page = pagination.page, limit = pagination.limit) => {
@@ -525,12 +535,26 @@ export default function UsersPage() {
               </button>
           </div>
 
-          {/* Right: Showing Entry Summary */}
-          <div className="text-xs text-gray-500 font-bold text-center md:text-right w-full md:w-auto">
-              <span>
-                  Showing <strong className="text-gray-900 dark:text-white">{pagination.total === 0 ? 0 : ((pagination.page - 1) * pagination.limit) + 1}</strong>–<strong className="text-gray-900 dark:text-white">{Math.min(pagination.page * pagination.limit, pagination.total)}</strong> of <strong className="text-gray-900 dark:text-white">{pagination.total}</strong> entries
-              </span>
-          </div>
+          {/* Right: Go to Page Text & Input Box */}
+          <form onSubmit={handleJumpPage} className="flex items-center gap-2 text-xs text-gray-500 font-bold justify-center md:justify-end w-full md:w-auto">
+              <span>Go to:</span>
+              <input
+                  type="number"
+                  min={1}
+                  max={pagination.pages || 1}
+                  value={jumpPage}
+                  onChange={(e) => setJumpPage(e.target.value)}
+                  placeholder={String(pagination.page)}
+                  className="w-14 h-9 bg-background border border-border text-gray-900 dark:text-white rounded-xl px-2 text-center text-xs font-black outline-none focus:border-primary shadow-inner"
+              />
+              <span className="text-[11px] text-gray-400">/ {pagination.pages || 1}</span>
+              <button
+                  type="submit"
+                  className="h-9 px-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm"
+              >
+                  Go
+              </button>
+          </form>
       </div>
 
       {/* Slide-in Registration Panel */}
