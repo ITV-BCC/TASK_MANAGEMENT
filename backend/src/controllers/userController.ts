@@ -40,9 +40,11 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const finalVerticalId = vertical_id ? vertical_id : null;
+
         const result = await pool.query(
             "INSERT INTO users (vertical_id, first_name, last_name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, first_name, last_name, email, role, vertical_id",
-            [vertical_id, first_name, last_name, email, hashedPassword, role]
+            [finalVerticalId, first_name, last_name, email, hashedPassword, role]
         );
 
         res.status(201).json({
@@ -227,9 +229,11 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
+        const finalVerticalId = vertical_id ? vertical_id : null;
+
         await pool.query(
             "UPDATE users SET first_name = $1, last_name = $2, role = $3, vertical_id = $4 WHERE id = $5",
-            [first_name || '', last_name || '', role, vertical_id, id]
+            [first_name || '', last_name || '', role, finalVerticalId, id]
         );
 
         res.status(200).json({ success: true, message: 'User updated successfully.' });

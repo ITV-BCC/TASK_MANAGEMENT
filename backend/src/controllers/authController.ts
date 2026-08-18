@@ -13,8 +13,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body;
 
-        // 1. Check if user exists in the database
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        // 1. Check if user exists in the database with department details
+        const result = await pool.query(`
+            SELECT u.*, v.name as vertical_name 
+            FROM users u 
+            LEFT JOIN verticals v ON u.vertical_id = v.id 
+            WHERE u.email = $1
+        `, [email]);
         const user = result.rows[0];
 
         if (!user) {
@@ -42,20 +47,44 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             { expiresIn: '24h' }
         );
 
-        // 5. Send success response back to frontend
+        // 5. Send success response back to frontend with full department information
         res.status(200).json({
             success: true,
             token,
             user: {
                 id: user.id,
                 first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
                 role: user.role,
-                vertical_id: user.vertical_id
+                vertical_id: user.vertical_id,
+                vertical_name: user.vertical_name || null
             }
         });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ success: false, message: 'Server crashed during login' });
+    }
+};
+
+export const getMe = async (req: any, res: Response): Promise<void> => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.is_active, u.vertical_id, v.name as vertical_name 
+            FROM users u 
+            LEFT JOIN verticals v ON u.vertical_id = v.id 
+            WHERE u.id = $1
+        `, [req.user?.id]);
+
+        if (result.rowCount === 0) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+
+        res.status(200).json({ success: true, user: result.rows[0] });
+    } catch (err) {
+        console.error('getMe error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 

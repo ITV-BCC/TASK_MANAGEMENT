@@ -138,7 +138,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 });
   
-  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const [currentUser, setCurrentUser] = useState(JSON.parse(sessionStorage.getItem('user') || '{}'));
   const isCoAdmin = currentUser.role === 'CO_ADMIN';
   const canCreateUsers = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(currentUser.role);
 
@@ -162,13 +162,20 @@ export default function UsersPage() {
   const fetchData = async (page = pagination.page) => {
     setFetching(true);
     try {
-      const [uRes, vRes] = await Promise.all([
+      const [uRes, vRes, meRes] = await Promise.all([
           api.get(`/users?page=${page}&limit=${pagination.limit}&search=${search}`), 
-          api.get('/verticals')
+          api.get('/verticals'),
+          api.get('/auth/me').catch(() => ({ data: { user: null } }))
       ]);
       setUsers(uRes.data.users || []);
       if (uRes.data.pagination) setPagination(uRes.data.pagination);
-      setVerticals(vRes.data.verticals || []);
+      const vList = vRes.data.verticals || [];
+      setVerticals(vList);
+      
+      if (meRes.data?.user) {
+        sessionStorage.setItem('user', JSON.stringify(meRes.data.user));
+        setCurrentUser(meRes.data.user);
+      }
       setSelectedUsers([]);
     } catch (err) { console.error(err); }
     finally { setFetching(false); }
@@ -353,11 +360,11 @@ export default function UsersPage() {
                         <div className="space-y-3">
                             <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Department</label>
                             {isCoAdmin ? (
-                                <div className="w-full h-14 md:h-16 bg-background/30 border border-primary/30 rounded-xl md:rounded-[2rem] px-6 md:px-8 flex items-center gap-3">
+                                <div className="w-full h-14 md:h-16 bg-background/40 border border-primary/30 rounded-xl md:rounded-[2rem] px-6 md:px-8 flex items-center justify-between">
                                     <span className="text-primary text-sm font-bold truncate">
-                                        {verticals.find(v => v.id === currentUser.vertical_id)?.name || 'Your Department'}
+                                        {verticals.find(v => v.id === currentUser.vertical_id)?.name || currentUser.vertical_name || 'Assigned Department'}
                                     </span>
-                                    <span className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-auto shrink-0">Locked</span>
+                                    <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest ml-auto shrink-0">Locked</span>
                                 </div>
                             ) : (
                                 <select required value={form.vertical_id} onChange={e => setForm({...form, vertical_id: e.target.value})} className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-xl md:rounded-[2rem] px-6 md:px-8 text-white focus:border-primary outline-none text-sm">

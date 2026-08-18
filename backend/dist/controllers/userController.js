@@ -38,7 +38,8 @@ const createUser = async (req, res) => {
             return;
         }
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
-        const result = await db_1.default.query("INSERT INTO users (vertical_id, first_name, last_name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, first_name, last_name, email, role, vertical_id", [vertical_id, first_name, last_name, email, hashedPassword, role]);
+        const finalVerticalId = vertical_id ? vertical_id : null;
+        const result = await db_1.default.query("INSERT INTO users (vertical_id, first_name, last_name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, first_name, last_name, email, role, vertical_id", [finalVerticalId, first_name, last_name, email, hashedPassword, role]);
         res.status(201).json({
             success: true,
             user: result.rows[0],
@@ -208,7 +209,8 @@ const updateUser = async (req, res) => {
             res.status(403).json({ success: false, message: 'Only Global Admins can edit other Global Admins.' });
             return;
         }
-        await db_1.default.query("UPDATE users SET first_name = $1, last_name = $2, role = $3, vertical_id = $4 WHERE id = $5", [first_name || '', last_name || '', role, vertical_id, id]);
+        const finalVerticalId = vertical_id ? vertical_id : null;
+        await db_1.default.query("UPDATE users SET first_name = $1, last_name = $2, role = $3, vertical_id = $4 WHERE id = $5", [first_name || '', last_name || '', role, finalVerticalId, id]);
         res.status(200).json({ success: true, message: 'User updated successfully.' });
     }
     catch (err) {

@@ -1,7 +1,8 @@
 import { LayoutDashboard, Users, ListTodo, Building2, LogOut, ChevronRight, Menu, X, UserCircle, Sun, Moon, FolderTree } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import api from '../api';
 
 const allNavItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN', 'EMPLOYEE'] },
@@ -16,8 +17,23 @@ export default function Sidebar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-  const role = user.role || 'EMPLOYEE';
+  const [currentUser, setCurrentUser] = useState(JSON.parse(sessionStorage.getItem('user') || '{}'));
+  const role = currentUser.role || 'EMPLOYEE';
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        if (res.data?.user) {
+          sessionStorage.setItem('user', JSON.stringify(res.data.user));
+          setCurrentUser(res.data.user);
+        }
+      } catch (err) {
+        // Fallback to session
+      }
+    };
+    fetchMe();
+  }, []);
 
   const navItems = allNavItems.filter(item => item.roles.includes(role));
 
@@ -25,6 +41,10 @@ export default function Sidebar() {
     sessionStorage.clear();
     window.location.href = '/login';
   };
+
+  const departmentDisplayName = role === 'GLOBAL_ADMIN' 
+    ? 'All Departments' 
+    : (currentUser.vertical_name || (currentUser.vertical_id ? 'Assigned Department' : 'No Department Assigned'));
 
   return (
     <>
@@ -98,13 +118,21 @@ export default function Sidebar() {
             {theme === 'dark' ? <><Sun size={14} /> Light Mode</> : <><Moon size={14} /> Dark Mode</>}
           </button>
 
-          <div className="flex items-center gap-4 mb-6 px-2">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-sm font-black ring-4 ring-primary/5">
-              {user.first_name?.[0] || 'U'}
+          <div className="flex items-center gap-3 mb-6 px-1">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-sm font-black ring-4 ring-primary/5 shrink-0">
+              {currentUser.first_name?.[0] || 'U'}
             </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-gray-900 dark:text-white text-[13px] font-bold truncate">{user.first_name || 'User'}</p>
-              <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">{role.replace(/_/g, ' ')}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-900 dark:text-white text-xs font-bold truncate leading-tight">
+                {currentUser.first_name || 'User'} {currentUser.last_name || ''}
+              </p>
+              <p className="text-[9px] text-primary font-black uppercase tracking-wider mt-0.5">
+                {role.replace(/_/g, ' ')}
+              </p>
+              <div className="mt-1 flex items-center gap-1 text-[9px] text-gray-500 dark:text-gray-400 font-bold truncate bg-background/80 border border-border/70 px-2 py-0.5 rounded-md">
+                <Building2 size={10} className="text-primary shrink-0" />
+                <span className="truncate">{departmentDisplayName}</span>
+              </div>
             </div>
           </div>
           <button

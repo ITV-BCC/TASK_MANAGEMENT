@@ -12,6 +12,7 @@ function AddModuleModal({
     defaultVerticalId, 
     userRole, 
     userVerticalId,
+    userVerticalName,
     onClose, 
     onRefresh 
 }: { 
@@ -20,6 +21,7 @@ function AddModuleModal({
     defaultVerticalId?: string, 
     userRole: string,
     userVerticalId?: string,
+    userVerticalName?: string,
     onClose: () => void, 
     onRefresh: () => void 
 }) {
@@ -35,6 +37,7 @@ function AddModuleModal({
     const [submitting, setSubmitting] = useState(false);
 
     const activeVertical = verticals.find(v => v.id === (isCoAdmin ? userVerticalId : selectedVerticalId));
+    const displayDeptName = activeVertical?.name || userVerticalName || (verticals.find(v => v.id === userVerticalId)?.name) || 'Assigned Department';
 
     // Filter assignees to the selected vertical if available
     const availableUsers = isCoAdmin && userVerticalId 
@@ -77,7 +80,7 @@ function AddModuleModal({
                     <div>
                         <h3 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Add New Module</h3>
                         <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">
-                            {activeVertical ? `Under ${activeVertical.name}` : 'Create Department Module'}
+                            Under {displayDeptName}
                         </p>
                     </div>
                     <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
@@ -92,9 +95,9 @@ function AddModuleModal({
                         {isCoAdmin ? (
                             <div className="w-full mt-1.5 h-12 bg-background/40 border border-primary/30 rounded-xl px-4 flex items-center justify-between">
                                 <span className="text-primary text-xs font-bold truncate">
-                                    {activeVertical?.name || 'Your Department'}
+                                    {displayDeptName}
                                 </span>
-                                <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest">Locked</span>
+                                <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest shrink-0 ml-2">Locked</span>
                             </div>
                         ) : (
                             <select 
@@ -561,18 +564,20 @@ export default function ModulesPage() {
     const [activeVertical, setActiveVertical] = useState<any>(null);
     const [showAddModal, setShowAddModal] = useState(false);
 
-    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-    const userRole: string = user.role || '';
-    const userVerticalId: string = user.vertical_id || '';
+    const [currentUser, setCurrentUser] = useState(JSON.parse(sessionStorage.getItem('user') || '{}'));
+    const userRole: string = currentUser.role || '';
+    const userVerticalId: string = currentUser.vertical_id || '';
+    const userVerticalName: string = currentUser.vertical_name || '';
     const canManageModules = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
 
     const fetchData = async () => {
         setFetching(true);
         try {
-            const [vRes, mRes, uRes] = await Promise.all([
+            const [vRes, mRes, uRes, meRes] = await Promise.all([
                 api.get('/verticals'),
                 api.get('/modules'),
-                api.get('/users?limit=1000')
+                api.get('/users?limit=1000'),
+                api.get('/auth/me').catch(() => ({ data: { user: null } }))
             ]);
             const fetchedVerticals = (vRes.data.verticals || []).sort((a: any, b: any) => 
                 new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -584,6 +589,11 @@ export default function ModulesPage() {
             setModules(fetchedModules);
             setUsers(fetchedUsers);
             
+            if (meRes.data?.user) {
+                sessionStorage.setItem('user', JSON.stringify(meRes.data.user));
+                setCurrentUser(meRes.data.user);
+            }
+
             if (activeVertical) {
                 const updatedActive = fetchedVerticals.find((v: any) => v.id === activeVertical.id);
                 if (updatedActive) setActiveVertical(updatedActive);
@@ -637,6 +647,7 @@ export default function ModulesPage() {
                     defaultVerticalId={activeVertical?.id || (userRole === 'CO_ADMIN' ? userVerticalId : undefined)}
                     userRole={userRole}
                     userVerticalId={userVerticalId}
+                    userVerticalName={userVerticalName}
                     onClose={() => setShowAddModal(false)}
                     onRefresh={fetchData}
                 />
@@ -666,7 +677,9 @@ export default function ModulesPage() {
                             </div>
                             <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tighter">System Modules</h1>
                             <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 opacity-60">
-                                {userRole === 'CO_ADMIN' ? 'Manage modules belonging to your department or explore organization structure' : 'Select any department to view and manage its modules individually'}
+                                {userRole === 'CO_ADMIN' 
+                                    ? (verticals.find(v => v.id === userVerticalId)?.name || userVerticalName ? `Department: ${verticals.find(v => v.id === userVerticalId)?.name || userVerticalName}` : 'Manage modules belonging to your department') 
+                                    : 'Select any department to view and manage its modules individually'}
                             </p>
                         </div>
                         
@@ -692,6 +705,12 @@ export default function ModulesPage() {
                             )}
                         </div>
                     </div>
+                    
+                    {userRole === 'CO_ADMIN' && !userVerticalId && (
+                        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 dark:text-amber-400 p-4 md:p-5 rounded-2xl text-xs font-bold flex items-center gap-3">
+                            <span>⚠️ Notice: This Co-Admin account does not have a department assigned yet. Please have a Global Admin assign your department under the <strong>Users</strong> tab.</span>
+                        </div>
+                    )}
 
                     {/* Content */}
                     {fetching && verticals.length === 0 ? (
