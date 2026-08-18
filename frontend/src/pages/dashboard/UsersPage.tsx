@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, UserMinus, Mail, Building2 } from 'lucide-react';
+import { Plus, Loader2, KeyRound, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, UserMinus, Mail, Building2 } from 'lucide-react';
 import api from '../../api';
 
 const ROLES = ['ADMIN', 'CO_ADMIN', 'EMPLOYEE'];
@@ -215,6 +215,16 @@ export default function UsersPage() {
     return pages;
   };
 
+  const handleToggleStatus = async (userObj: any) => {
+    if (userObj.role === 'GLOBAL_ADMIN') return;
+    try {
+      await api.put(`/users/${userObj.id}/toggle-status`, {});
+      fetchData();
+    } catch (err) {
+      alert('Failed to update status');
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
@@ -386,19 +396,50 @@ export default function UsersPage() {
                         </span>
                       </td>
 
-                      {/* Status */}
+                      {/* Status with Interactive Switch Toggle */}
                       <td className="py-4 px-4 text-center">
-                        {u.is_active ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-danger/10 text-danger border border-danger/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
-                            Inactive
-                          </span>
-                        )}
+                        <div className="inline-flex items-center justify-center">
+                          {u.role === 'GLOBAL_ADMIN' ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Active
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(u)}
+                              className="group inline-flex items-center gap-2 cursor-pointer outline-none select-none"
+                              title={`Click to ${u.is_active ? 'deactivate' : 'activate'} ${u.first_name}`}
+                            >
+                              {/* Switch Track */}
+                              <div
+                                className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out shadow-inner ${
+                                  u.is_active
+                                    ? 'bg-emerald-500 dark:bg-emerald-500'
+                                    : 'bg-gray-300 dark:bg-gray-600'
+                                }`}
+                              >
+                                {/* Switch Knob */}
+                                <div
+                                  className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
+                                    u.is_active ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Label */}
+                              <span
+                                className={`text-[9px] font-black uppercase tracking-wider min-w-[50px] text-left transition-colors ${
+                                  u.is_active
+                                    ? 'text-emerald-500 group-hover:text-emerald-600'
+                                    : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600'
+                                }`}
+                              >
+                                {u.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -418,22 +459,6 @@ export default function UsersPage() {
                           >
                             <KeyRound size={14} />
                           </button>
-                          {u.role !== 'GLOBAL_ADMIN' && (
-                            <button
-                              onClick={async () => {
-                                await api.put(`/users/${u.id}/toggle-status`, {});
-                                fetchData();
-                              }}
-                              className={`p-2 rounded-xl border transition-all shadow-sm ${
-                                u.is_active
-                                  ? 'bg-background border-border text-gray-400 hover:text-danger hover:border-danger/30 hover:bg-danger/10'
-                                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white'
-                              }`}
-                              title={u.is_active ? 'Deactivate User' : 'Activate User'}
-                            >
-                              <Power size={14} />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
