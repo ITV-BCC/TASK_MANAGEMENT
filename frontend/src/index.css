@@ -177,10 +177,41 @@ option {
   color: var(--text-main) !important;
 }
 
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+/* CONSTANT VISIBLE SCROLLBAR */
+::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(75, 46, 131, 0.08);
+  border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-track,
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(134, 101, 216, 0.12);
+}
+
+::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Firefox Scrollbar Styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) rgba(75, 46, 131, 0.08);
+}
+
 
 /* MODERN ANIMATIONS & AMBIENT EFFECTS */
 @keyframes float {
