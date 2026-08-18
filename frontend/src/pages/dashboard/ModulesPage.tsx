@@ -132,7 +132,7 @@ function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: 
                             </div>
 
                             <div className="pt-3 flex gap-3 border-t border-border/50">
-                                <button type="button" onClick={() => setIsEditing(false)} className="flex-1 h-12 rounded-xl bg-background border border-border text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors font-black uppercase tracking-widest text-[10px]">Back</button>
+                                <button type="button" onClick={() => setIsEditing(false)} className="flex-1 h-12 rounded-xl bg-danger/10 text-danger border border-danger/30 hover:bg-danger hover:text-white transition-all font-black uppercase tracking-widest text-[10px] shadow-sm">Cancel</button>
                                 <button type="submit" disabled={saving} className="flex-[2] h-12 rounded-xl bg-primary text-white font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-lg shadow-primary/20 disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
                             </div>
                         </form>
@@ -226,7 +226,7 @@ function IndividualDepartmentView({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50">
                 <button 
                     onClick={onBack}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface hover:bg-background border border-border rounded-xl text-gray-500 hover:text-primary transition-all text-xs font-black uppercase tracking-wider w-fit group"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white rounded-xl transition-all text-xs font-black uppercase tracking-wider w-fit group"
                 >
                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     Back to Departments
@@ -442,7 +442,7 @@ function IndividualDepartmentView({
                                 <button 
                                     type="button" 
                                     onClick={() => setShowAddModal(false)} 
-                                    className="flex-1 h-12 rounded-xl bg-background border border-border text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors font-black uppercase tracking-widest text-[10px]"
+                                    className="flex-1 h-12 rounded-xl bg-danger/10 text-danger border border-danger/30 hover:bg-danger hover:text-white transition-all font-black uppercase tracking-widest text-[10px] shadow-sm"
                                 >
                                     Cancel
                                 </button>

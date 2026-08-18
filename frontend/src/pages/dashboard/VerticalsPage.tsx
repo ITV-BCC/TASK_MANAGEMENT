@@ -117,8 +117,8 @@ export default function VerticalsPage() {
                                 value={editValue}
                                 onChange={e => setEditValue(e.target.value)}
                              />
-                             <button onClick={() => handleUpdate(v.id)} className="p-2 bg-primary text-white rounded-xl flex items-center justify-center shrink-0"><Check size={16}/></button>
-                             <button onClick={() => setEditingId(null)} className="p-2 bg-background border border-border text-gray-500 rounded-xl flex items-center justify-center shrink-0"><X size={16}/></button>
+                             <button onClick={() => handleUpdate(v.id)} className="p-2 bg-primary text-white rounded-xl flex items-center justify-center shrink-0 hover:bg-primaryHover transition-all shadow-lg shadow-primary/20"><Check size={16}/></button>
+                             <button onClick={() => setEditingId(null)} className="p-2 bg-danger/10 border border-danger/30 text-danger hover:bg-danger hover:text-white rounded-xl flex items-center justify-center shrink-0 transition-all"><X size={16}/></button>
                           </div>
                       ) : (
                           <div className="mt-4">

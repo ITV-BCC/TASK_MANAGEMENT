@@ -184,7 +184,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={loading}
-              className="ml-auto bg-white text-black px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50"
+              className="ml-auto bg-primary text-white px-10 h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center gap-3 disabled:opacity-50 shadow-xl shadow-primary/20"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Save Changes
             </button>

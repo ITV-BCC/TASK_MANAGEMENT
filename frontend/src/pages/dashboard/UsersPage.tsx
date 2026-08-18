@@ -124,7 +124,7 @@ function ResetModal({ user, onClose, onSuccess }: { user: any; onClose: () => vo
             <button onClick={handleReset} disabled={loading || newPassword.length < 6} className="w-full bg-primary hover:bg-primaryHover h-14 md:h-16 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-30">
                 {loading ? <Loader2 className="animate-spin inline" size={18} /> : 'Commit Reset'}
             </button>
-            <button onClick={onClose} className="w-full text-gray-500 font-bold uppercase tracking-widest text-[9px] md:text-[10px] hover:text-white transition-all">Abort Procedure</button>
+            <button onClick={onClose} className="w-full h-12 bg-danger/10 text-danger border border-danger/30 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-danger hover:text-white transition-all">Cancel</button>
         </div>
       </div>
     </div>
@@ -273,8 +273,8 @@ export default function UsersPage() {
 
                 <div className="flex items-center justify-end xl:justify-center gap-2 mt-5 xl:mt-0 transition-opacity p-5 pt-0 md:p-6 md:pt-0 xl:p-0 xl:pr-6">
                     {!u.is_active && <span className="bg-danger/10 text-danger text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mr-2 hidden xs:block">Deactivated</span>}
-                    <button onClick={() => setEditModal(u)} className="p-3 md:p-3.5 rounded-xl bg-background border border-border text-gray-500 hover:text-white transition-all shadow-sm" title="Edit Profile"><Edit2 size={16} /></button>
-                    <button onClick={() => setResetModal(u)} className="p-3 md:p-3.5 rounded-xl bg-background border border-border text-gray-500 hover:text-yellow-400 transition-all shadow-sm" title="Override Key"><KeyRound size={16} /></button>
+                    <button onClick={() => setEditModal(u)} className="p-3 md:p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" title="Edit Profile"><Edit2 size={16} /></button>
+                    <button onClick={() => setResetModal(u)} className="p-3 md:p-3.5 rounded-xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 hover:bg-yellow-400 hover:text-white transition-all shadow-sm" title="Override Key"><KeyRound size={16} /></button>
                     {u.role !== 'GLOBAL_ADMIN' && (
                         <button onClick={async () => { await api.put(`/users/${u.id}/toggle-status`, {}); fetchData(); }} className={`p-3 md:p-3.5 rounded-xl bg-background border border-border transition-all shadow-sm ${u.is_active ? 'text-gray-500 hover:text-danger hover:bg-danger/5' : 'text-secondary bg-secondary/5 hover:bg-secondary/10'}`} title="System Access">
                             <Power size={16} />
@@ -340,7 +340,7 @@ export default function UsersPage() {
 
                 <div className="mt-12 md:mt-20 flex flex-col sm:flex-row gap-4">
                     <button type="submit" className="flex-1 h-16 md:h-20 bg-primary text-white rounded-2xl md:rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-[10px] md:text-xs hover:bg-primaryHover transition-all shadow-2xl shadow-primary/20">Commit Entry</button>
-                    <button type="button" onClick={() => setShowTaskForm(false)} className="w-full sm:w-20 h-16 md:h-20 bg-background border border-border text-gray-500 rounded-2xl md:rounded-[2.5rem] flex items-center justify-center hover:text-white transition-all">Cancel</button>
+                    <button type="button" onClick={() => setShowTaskForm(false)} className="w-full sm:w-auto px-8 h-16 md:h-20 bg-danger/10 text-danger border border-danger/30 rounded-2xl md:rounded-[2.5rem] flex items-center justify-center hover:bg-danger hover:text-white transition-all font-black uppercase tracking-widest text-[10px] shadow-sm">Cancel</button>
                 </div>
             </form>
         </div>

@@ -596,7 +596,7 @@ export default function TasksPage() {
                         <button 
                             type="button" 
                             onClick={() => setShowTaskForm(false)} 
-                            className="flex-1 h-12 bg-background border border-border text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all font-black uppercase tracking-widest text-[10px]"
+                            className="flex-1 h-12 bg-danger/10 text-danger border border-danger/30 hover:bg-danger hover:text-white rounded-xl transition-all font-black uppercase tracking-widest text-[10px] shadow-sm"
                         >
                             Cancel
                         </button>
@@ -711,8 +711,8 @@ export default function TasksPage() {
                                 <p className="text-[9px] text-gray-500 uppercase mt-0.5">Uploaded by {f.first_name}</p>
                             </div>
                             <div className="flex gap-1.5">
-                                <button onClick={() => handleDownload(f.id, f.file_name)} className="p-2 bg-surface border border-border text-gray-500 hover:text-primary rounded-lg transition-all" title="Download File"><Download size={14}/></button>
-                                {(user.id === f.uploaded_by || user.role === 'GLOBAL_ADMIN') && <button onClick={() => deleteFile(f.id)} className="p-2 bg-surface border border-border text-gray-500 hover:text-danger rounded-lg transition-all" title="Delete File"><Trash2 size={14}/></button>}
+                                <button onClick={() => handleDownload(f.id, f.file_name)} className="p-2 bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary hover:text-white rounded-lg transition-all" title="Download File"><Download size={14}/></button>
+                                {(user.id === f.uploaded_by || user.role === 'GLOBAL_ADMIN') && <button onClick={() => deleteFile(f.id)} className="p-2 bg-danger/10 text-danger border border-danger/20 hover:bg-danger hover:text-white rounded-lg transition-all" title="Delete File"><Trash2 size={14}/></button>}
                             </div>
                         </div>
                     ))}
@@ -740,7 +740,7 @@ export default function TasksPage() {
                     onChange={e => setReworkModal({...reworkModal, reason: e.target.value})}
                 />
                 <div className="flex gap-3">
-                    <button onClick={() => setReworkModal({ open: false, task: null, reason: '' })} className="flex-1 h-11 bg-background border border-border text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Cancel</button>
+                    <button onClick={() => setReworkModal({ open: false, task: null, reason: '' })} className="flex-1 h-11 bg-danger/10 text-danger border border-danger/30 hover:bg-danger hover:text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-sm">Cancel</button>
                     <button onClick={submitRework} className="flex-1 h-11 bg-danger text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-danger/80 transition-all shadow-lg shadow-danger/20">Submit Rework</button>
                 </div>
             </div>
