@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree, AlertCircle, CheckCircle2, UserCheck, UserX } from 'lucide-react';
+import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree, AlertCircle, CheckCircle2, UserCheck, UserX, Building2, Sparkles } from 'lucide-react';
 import api from '../../api';
 import * as XLSX from 'xlsx';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
@@ -38,6 +38,7 @@ export default function TasksPage() {
   const [newComment, setNewComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [assignModal, setAssignModal] = useState<{ open: boolean; task: any | null }>({ open: false, task: null });
+  const [assignSearch, setAssignSearch] = useState('');
   const [confirmAssignModal, setConfirmAssignModal] = useState<{ open: boolean; emp: any | null; task: any | null; isAssigned: boolean; isBulk?: boolean } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
   const [taskForm, setTaskForm] = useState<{ title: string, description: string, priority: string, due_date: string, vertical_ids: string[], module_id: string }>({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [], module_id: '' });
@@ -634,45 +635,183 @@ export default function TasksPage() {
       {/* Modals like Assign, Chat, etc - all need similar mobile-first tweaks */}
       {/* (Reducing modal font sizes and paddings where needed) */}
       
-      {/* ASSIGN MODAL */}
+      {/* ASSIGN MODAL (Redesigned with High-End SaaS Aesthetics) */}
       {assignModal.open && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[210] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setAssignModal({ open: false, task: null })}>
-            <div className="bg-surface border border-border rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-6 pb-4 border-b border-border/50">
-                    <div>
-                        <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Assign Team Member</h2>
-                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">Select personnel for this task</p>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-[210] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => { setAssignModal({ open: false, task: null }); setAssignSearch(''); }}>
+            <div className="bg-surface border border-border/80 rounded-[2rem] md:rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                
+                {/* Header */}
+                <div className="p-6 md:p-8 border-b border-border/50 bg-gradient-to-b from-primary/5 via-background/40 to-background/10">
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-violet-500 text-white flex items-center justify-center shadow-lg shadow-primary/25 shrink-0 ring-4 ring-primary/10">
+                                <UserPlus size={22} />
+                            </div>
+                            <div>
+                                <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">
+                                    {assignModal.task?.id === 'BULK_ASSIGN' ? 'Bulk Resource Allocation' : 'Assign Team Member'}
+                                </h2>
+                                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">
+                                    {assignModal.task?.id === 'BULK_ASSIGN' ? `Assigning ${selectedTasks.length} selected tasks` : 'Allocate personnel & set ownership'}
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => { setAssignModal({ open: false, task: null }); setAssignSearch(''); }} 
+                            className="w-9 h-9 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm hover:scale-105"
+                        >
+                            <X size={16} />
+                        </button>
                     </div>
-                    <button onClick={() => setAssignModal({ open: false, task: null })} className="w-8 h-8 flex items-center justify-center bg-background border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"><X size={16}/></button>
+
+                    {/* Task Context Hero Card */}
+                    {assignModal.task && assignModal.task.id !== 'BULK_ASSIGN' && (
+                        <div className="mt-5 p-4 rounded-2xl bg-background/80 dark:bg-background/60 border border-border/70 shadow-inner flex flex-col gap-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                                    <Sparkles size={12} /> Target Task
+                                </span>
+                                {assignModal.task.priority && (
+                                    <span className={`px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${priorityColors[assignModal.task.priority] || 'bg-gray-500/20 text-gray-400'}`}>
+                                        {assignModal.task.priority} Priority
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">
+                                {assignModal.task.title}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40 text-[10px] text-gray-500 font-medium">
+                                <span className="flex items-center gap-1">
+                                    <Building2 size={11} className="text-primary/70" />
+                                    {assignModal.task.vertical_name || 'Organization Wide'}
+                                </span>
+                                <span>•</span>
+                                <span className="truncate">
+                                    {assignModal.task.assigned_users && assignModal.task.assigned_users.length > 0 ? (
+                                        <span className="text-secondary font-bold">
+                                            Currently: {assignModal.task.assigned_users.map((u: any) => u.first_name).join(', ')}
+                                        </span>
+                                    ) : (
+                                        <span className="text-amber-500/80 font-bold">Currently Unassigned</span>
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Search & Filter inside Modal */}
+                    <div className="mt-4 relative">
+                        <input
+                            type="text"
+                            value={assignSearch}
+                            onChange={e => setAssignSearch(e.target.value)}
+                            placeholder="Filter members by name, email, or department..."
+                            className="w-full h-11 pl-10 pr-4 bg-background/90 border border-border/80 rounded-xl text-xs text-gray-900 dark:text-white outline-none focus:border-primary transition-all shadow-inner placeholder:text-gray-500"
+                        />
+                        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
                 </div>
-                <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar">
-                    {users.filter(u => (u.role === 'EMPLOYEE' || u.role === 'CO_ADMIN') && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => {
-                        const isAssigned = assignModal.task?.assigned_users?.some((u: any) => u.id === emp.id);
-                        return (
-                            <button 
-                                key={emp.id} 
-                                onClick={() => setConfirmAssignModal({
-                                    open: true,
-                                    emp,
-                                    task: assignModal.task,
-                                    isAssigned: isAssigned || false,
-                                    isBulk: assignModal.task?.id === 'BULK_ASSIGN'
-                                })} 
-                                className={`w-full p-3.5 bg-background border rounded-xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
-                            >
-                                 <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${isAssigned ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>{emp.first_name[0]}</div>
-                                    <div className="text-left">
-                                        <p className="text-gray-900 dark:text-white font-bold text-xs">{emp.first_name} {emp.last_name}</p>
-                                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">{emp.vertical_name || 'System'}</p>
+
+                {/* Team Members List */}
+                <div className="p-6 md:p-8 space-y-2.5 overflow-y-auto custom-scrollbar flex-1">
+                    {(() => {
+                        const targetVerticalId = assignModal.task?.vertical_id;
+                        const filteredMembers = users
+                            .filter(u => (u.role === 'EMPLOYEE' || u.role === 'CO_ADMIN') && (!targetVerticalId || u.vertical_id === targetVerticalId))
+                            .filter(u => {
+                                if (!assignSearch.trim()) return true;
+                                const q = assignSearch.toLowerCase();
+                                return (
+                                    `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
+                                    (u.email && u.email.toLowerCase().includes(q)) ||
+                                    (u.vertical_name && u.vertical_name.toLowerCase().includes(q))
+                                );
+                            });
+
+                        if (filteredMembers.length === 0) {
+                            return (
+                                <div className="py-12 flex flex-col items-center justify-center text-center text-gray-400 opacity-60">
+                                    <UserX size={36} className="mb-2 text-gray-400" />
+                                    <p className="font-bold text-xs">No team members match your criteria</p>
+                                    <p className="text-[10px] mt-0.5">Try searching with a different name or department</p>
+                                </div>
+                            );
+                        }
+
+                        return filteredMembers.map(emp => {
+                            const isAssigned = assignModal.task?.assigned_users?.some((u: any) => u.id === emp.id);
+                            const hasOtherAssignments = !isAssigned && assignModal.task?.assigned_users?.length > 0;
+
+                            return (
+                                <div
+                                    key={emp.id}
+                                    onClick={() => setConfirmAssignModal({
+                                        open: true,
+                                        emp,
+                                        task: assignModal.task,
+                                        isAssigned: isAssigned || false,
+                                        isBulk: assignModal.task?.id === 'BULK_ASSIGN'
+                                    })}
+                                    className={`w-full p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group select-none ${
+                                        isAssigned
+                                            ? 'bg-primary/5 border-primary/50 shadow-md shadow-primary/5'
+                                            : 'bg-background/60 hover:bg-background border-border/70 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01]'
+                                    }`}
+                                >
+                                    {/* Member Info */}
+                                    <div className="flex items-center gap-3.5 min-w-0 pr-3">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 transition-all ${
+                                            isAssigned 
+                                                ? 'bg-primary text-white shadow-md shadow-primary/25 ring-2 ring-primary/30' 
+                                                : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'
+                                        }`}>
+                                            {emp.first_name?.[0] || 'U'}
+                                        </div>
+                                        <div className="text-left truncate">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-gray-900 dark:text-white font-bold text-xs md:text-sm truncate leading-tight">
+                                                    {emp.first_name} {emp.last_name || ''}
+                                                </p>
+                                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider shrink-0 ${
+                                                    emp.role === 'CO_ADMIN' 
+                                                        ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' 
+                                                        : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                                                }`}>
+                                                    {emp.role === 'CO_ADMIN' ? 'Co-Admin' : 'Employee'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 font-medium flex items-center gap-1 mt-1 truncate">
+                                                <Building2 size={11} className="text-gray-400 shrink-0" />
+                                                <span className="truncate">{emp.vertical_name || 'Assigned Department'}</span>
+                                            </p>
+                                        </div>
                                     </div>
-                                 </div>
-                                 <div className={isAssigned ? 'text-secondary' : 'text-primary'}>
-                                     {isAssigned ? <CheckCircle size={18}/> : <Plus size={18}/>}
-                                 </div>
-                            </button>
-                        );
-                    })}
+
+                                    {/* Action Status Pill */}
+                                    <div className="shrink-0">
+                                        {isAssigned ? (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/15 border border-secondary/30 text-secondary text-[10px] font-black uppercase tracking-wider group-hover:bg-danger/15 group-hover:border-danger/30 group-hover:text-danger transition-all shadow-sm">
+                                                <CheckCircle2 size={14} className="group-hover:hidden" />
+                                                <UserX size={14} className="hidden group-hover:block" />
+                                                <span className="group-hover:hidden">Assigned</span>
+                                                <span className="hidden group-hover:inline">Remove</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-surface border border-border text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all shadow-sm">
+                                                <Plus size={13} />
+                                                <span>{hasOtherAssignments ? 'Reassign' : 'Assign'}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        });
+                    })()}
+                </div>
+
+                {/* Footer Tip */}
+                <div className="p-4 px-6 md:px-8 border-t border-border/50 bg-background/50 flex items-center justify-between text-[10px] text-gray-500 font-medium">
+                    <span>💡 Click any member to initiate assignment with confirmation</span>
                 </div>
             </div>
         </div>
