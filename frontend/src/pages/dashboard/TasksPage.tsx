@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree } from 'lucide-react';
+import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree, AlertCircle, CheckCircle2, UserCheck, UserX } from 'lucide-react';
 import api from '../../api';
 import * as XLSX from 'xlsx';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
@@ -38,12 +38,19 @@ export default function TasksPage() {
   const [newComment, setNewComment] = useState('');
   const [uploading, setUploading] = useState(false);
   const [assignModal, setAssignModal] = useState<{ open: boolean; task: any | null }>({ open: false, task: null });
+  const [confirmAssignModal, setConfirmAssignModal] = useState<{ open: boolean; emp: any | null; task: any | null; isAssigned: boolean; isBulk?: boolean } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
   const [taskForm, setTaskForm] = useState<{ title: string, description: string, priority: string, due_date: string, vertical_ids: string[], module_id: string }>({ title: '', description: '', priority: 'MEDIUM', due_date: '', vertical_ids: [], module_id: '' });
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [formModules, setFormModules] = useState<any[]>([]);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  const showToast = (message: string, type: 'success' | 'danger' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const safeFetch = async (page = pagination.page) => {
     setFetching(true);
@@ -104,16 +111,22 @@ export default function TasksPage() {
     }
   }, [taskForm.vertical_ids]);
 
-  const handleAssignTask = async (userId: string) => {
-    if (!assignModal.task) return;
+  const handleAssignTask = async (emp: any) => {
+    if (!assignModal.task || !emp) return;
+    const userId = emp.id;
     
     if (assignModal.task.id === 'BULK_ASSIGN') {
         try {
             await api.post('/tasks/bulk-assign', { task_ids: selectedTasks, employee_id: userId });
+            setConfirmAssignModal(null);
             setAssignModal({ open: false, task: null });
             setSelectedTasks([]);
+            showToast(`✅ Successfully assigned ${selectedTasks.length} tasks to ${emp.first_name} ${emp.last_name}!`, 'success');
             safeFetch();
-        } catch (err) { console.error(err); alert('Bulk Assign Failed'); }
+        } catch (err) { 
+            console.error(err); 
+            showToast('❌ Bulk Assign Failed', 'danger'); 
+        }
         return;
     }
 
@@ -122,17 +135,22 @@ export default function TasksPage() {
       const isAssigned = res.data.assigned;
       let newAssigned = [...(assignModal.task.assigned_users || [])];
       if (isAssigned) {
-        const emp = users.find(u => u.id === userId);
-        if (emp) newAssigned.push({ id: emp.id, first_name: emp.first_name, last_name: emp.last_name });
+        newAssigned.push({ id: emp.id, first_name: emp.first_name, last_name: emp.last_name });
+        showToast(`✅ Assigned "${assignModal.task.title}" to ${emp.first_name} ${emp.last_name}!`, 'success');
       } else {
-        newAssigned = newAssigned.filter(u => u.id !== userId);
+        newAssigned = newAssigned.filter((u: any) => u.id !== userId);
+        showToast(`ℹ️ Removed ${emp.first_name} ${emp.last_name} from task.`, 'danger');
       }
       setAssignModal({
         ...assignModal,
         task: { ...assignModal.task, assigned_users: newAssigned }
       });
+      setConfirmAssignModal(null);
       safeFetch();
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error(err); 
+      showToast('❌ Failed to update assignment', 'danger'); 
+    }
   };
 
   const exportToExcel = async () => {
@@ -631,7 +649,17 @@ export default function TasksPage() {
                     {users.filter(u => (u.role === 'EMPLOYEE' || u.role === 'CO_ADMIN') && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => {
                         const isAssigned = assignModal.task?.assigned_users?.some((u: any) => u.id === emp.id);
                         return (
-                            <button key={emp.id} onClick={() => handleAssignTask(emp.id)} className={`w-full p-3.5 bg-background border rounded-xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}>
+                            <button 
+                                key={emp.id} 
+                                onClick={() => setConfirmAssignModal({
+                                    open: true,
+                                    emp,
+                                    task: assignModal.task,
+                                    isAssigned: isAssigned || false,
+                                    isBulk: assignModal.task?.id === 'BULK_ASSIGN'
+                                })} 
+                                className={`w-full p-3.5 bg-background border rounded-xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                            >
                                  <div className="flex items-center gap-3">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${isAssigned ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>{emp.first_name[0]}</div>
                                     <div className="text-left">
@@ -647,6 +675,114 @@ export default function TasksPage() {
                     })}
                 </div>
             </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION MODAL FOR ASSIGNING / REASSIGNING / REMOVING */}
+      {confirmAssignModal && confirmAssignModal.open && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[230] flex items-center justify-center p-4 animate-in fade-in duration-150" onClick={() => setConfirmAssignModal(null)}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl animate-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-3.5 mb-5">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                        confirmAssignModal.isAssigned 
+                            ? 'bg-danger/10 text-danger border border-danger/20' 
+                            : 'bg-primary/10 text-primary border border-primary/20'
+                    }`}>
+                        {confirmAssignModal.isAssigned ? <UserX size={24} /> : <UserCheck size={24} />}
+                    </div>
+                    <div>
+                        <h3 className="text-gray-900 dark:text-white font-black text-lg tracking-tight">
+                            {confirmAssignModal.isBulk 
+                                ? 'Confirm Bulk Assignment' 
+                                : confirmAssignModal.isAssigned 
+                                    ? 'Confirm Member Removal' 
+                                    : (confirmAssignModal.task?.assigned_users?.length > 0 ? 'Confirm Task Reassignment' : 'Confirm Task Assignment')}
+                        </h3>
+                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">
+                            Please verify action details
+                        </p>
+                    </div>
+                </div>
+
+                {/* Details Card */}
+                <div className="bg-background/80 border border-border/70 rounded-2xl p-4 space-y-3 mb-6 text-xs">
+                    <div>
+                        <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Team Member</span>
+                        <div className="flex items-center gap-2.5 mt-1 font-bold text-gray-900 dark:text-white">
+                            <span className="w-6 h-6 rounded-lg bg-primary/20 text-primary flex items-center justify-center text-[10px]">
+                                {confirmAssignModal.emp?.first_name?.[0]}
+                            </span>
+                            <span>{confirmAssignModal.emp?.first_name} {confirmAssignModal.emp?.last_name}</span>
+                            <span className="text-[10px] text-primary font-normal">({confirmAssignModal.emp?.role?.replace('_', ' ')})</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border/40">
+                        <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Target Task</span>
+                        <p className="font-bold text-gray-800 dark:text-gray-200 mt-0.5 truncate">
+                            {confirmAssignModal.isBulk 
+                                ? `${selectedTasks.length} Selected Tasks` 
+                                : confirmAssignModal.task?.title}
+                        </p>
+                    </div>
+
+                    {!confirmAssignModal.isBulk && confirmAssignModal.task?.assigned_users?.length > 0 && (
+                        <div className="pt-2 border-t border-border/40">
+                            <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Currently Assigned</span>
+                            <p className="text-gray-600 dark:text-gray-400 font-medium mt-0.5 truncate">
+                                {confirmAssignModal.task.assigned_users.map((u: any) => `${u.first_name} ${u.last_name || ''}`).join(', ')}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Question Prompt */}
+                <p className="text-xs text-gray-600 dark:text-gray-300 font-medium mb-6 px-1 leading-relaxed">
+                    {confirmAssignModal.isBulk ? (
+                        <>Are you sure you want to assign <strong>{selectedTasks.length} tasks</strong> to <strong>{confirmAssignModal.emp?.first_name} {confirmAssignModal.emp?.last_name}</strong>?</>
+                    ) : confirmAssignModal.isAssigned ? (
+                        <>Are you sure you want to <strong>remove</strong> {confirmAssignModal.emp?.first_name} {confirmAssignModal.emp?.last_name} from this task?</>
+                    ) : confirmAssignModal.task?.assigned_users?.length > 0 ? (
+                        <>Are you sure you want to <strong>reassign / add</strong> {confirmAssignModal.emp?.first_name} {confirmAssignModal.emp?.last_name} to this task?</>
+                    ) : (
+                        <>Are you sure you want to assign this task to <strong>{confirmAssignModal.emp?.first_name} {confirmAssignModal.emp?.last_name}</strong>?</>
+                    )}
+                </p>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                    <button 
+                        type="button" 
+                        onClick={() => setConfirmAssignModal(null)} 
+                        className="flex-1 h-12 bg-surface border border-border text-gray-600 dark:text-gray-300 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-background transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={() => handleAssignTask(confirmAssignModal.emp)} 
+                        className={`flex-1 h-12 rounded-xl text-white font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-2 shadow-lg ${
+                            confirmAssignModal.isAssigned 
+                                ? 'bg-danger hover:bg-red-600 shadow-danger/20' 
+                                : 'bg-primary hover:bg-primaryHover shadow-primary/20'
+                        }`}
+                    >
+                        {confirmAssignModal.isAssigned ? 'Yes, Remove' : (confirmAssignModal.task?.assigned_users?.length > 0 ? 'Yes, Reassign' : 'Yes, Assign')}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Floating Action Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[260] px-5 py-3.5 rounded-2xl shadow-2xl border flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-200 text-xs font-bold ${
+            toast.type === 'danger' 
+                ? 'bg-danger text-white border-danger/40 shadow-danger/20' 
+                : 'bg-surface text-gray-900 dark:text-white border-primary/40 shadow-primary/20'
+        }`}>
+            {toast.type === 'danger' ? <AlertCircle size={16} className="text-white shrink-0" /> : <CheckCircle2 size={16} className="text-primary shrink-0" />}
+            <span>{toast.message}</span>
         </div>
       )}
 
