@@ -23,11 +23,20 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 // ==========================================
 // ALLOW ALL ORIGINS IN PRODUCTION FOR INITIAL SETUP, OR SPECIFY YOUR DOMAIN
+app.set('etag', false);
 app.use(cors({
     origin: '*', 
     credentials: true
 }));
 app.use(express.json());
+
+// Prevent stale 304 caching on dynamic REST API calls
+app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
 
 // ==========================================
 // Routes
