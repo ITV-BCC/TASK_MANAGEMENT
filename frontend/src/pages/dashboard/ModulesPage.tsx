@@ -1,10 +1,213 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, FolderTree, Trash2, X, Plus, Search, Calendar, User, Edit3, ArrowLeft, Building2, ChevronRight, Layers } from 'lucide-react';
+import { Loader2, FolderTree, Trash2, X, Plus, Search, Calendar, User, Edit3, ArrowLeft, Building2, ChevronRight, Layers, CheckCircle2 } from 'lucide-react';
 import api from '../../api';
 import { formatDate } from '../../utils/dateUtils';
 
-function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: any, users: any[], userRole: string, onClose: () => void, onRefresh: () => void }) {
-    const canManage = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
+// =========================================================================
+// 1. ADD MODULE MODAL (Unified for Global Admin, Admin, and Co-Admin)
+// =========================================================================
+function AddModuleModal({ 
+    verticals, 
+    users, 
+    defaultVerticalId, 
+    userRole, 
+    userVerticalId,
+    onClose, 
+    onRefresh 
+}: { 
+    verticals: any[], 
+    users: any[], 
+    defaultVerticalId?: string, 
+    userRole: string,
+    userVerticalId?: string,
+    onClose: () => void, 
+    onRefresh: () => void 
+}) {
+    const isCoAdmin = userRole === 'CO_ADMIN';
+    const targetVerticalId = isCoAdmin ? (userVerticalId || '') : (defaultVerticalId || (verticals[0]?.id || ''));
+    
+    const [selectedVerticalId, setSelectedVerticalId] = useState(targetVerticalId);
+    const [code, setCode] = useState('');
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [assigneeId, setAssigneeId] = useState('');
+    const [dueDate, setDueDate] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const activeVertical = verticals.find(v => v.id === (isCoAdmin ? userVerticalId : selectedVerticalId));
+
+    // Filter assignees to the selected vertical if available
+    const availableUsers = isCoAdmin && userVerticalId 
+        ? users.filter(u => u.vertical_id === userVerticalId || !u.vertical_id)
+        : users;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const finalVerticalId = isCoAdmin ? userVerticalId : selectedVerticalId;
+        
+        if (!finalVerticalId) {
+            alert('Please select a department for this module');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await api.post('/modules', { 
+                vertical_id: finalVerticalId, 
+                code, 
+                name, 
+                description: description || null,
+                assignee_id: assigneeId || null,
+                due_date: dueDate || null
+            });
+            onRefresh();
+            onClose();
+        } catch (err: any) {
+            console.error(err);
+            alert(err.response?.data?.message || 'Failed to add module');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="p-6 md:p-8 border-b border-border/50 flex justify-between items-center bg-background/50">
+                    <div>
+                        <h3 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Add New Module</h3>
+                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">
+                            {activeVertical ? `Under ${activeVertical.name}` : 'Create Department Module'}
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    {/* Department Selection (Locked for Co-Admin, Dropdown for Global Admin) */}
+                    <div>
+                        <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Target Department</label>
+                        {isCoAdmin ? (
+                            <div className="w-full mt-1.5 h-12 bg-background/40 border border-primary/30 rounded-xl px-4 flex items-center justify-between">
+                                <span className="text-primary text-xs font-bold truncate">
+                                    {activeVertical?.name || 'Your Department'}
+                                </span>
+                                <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest">Locked</span>
+                            </div>
+                        ) : (
+                            <select 
+                                required
+                                value={selectedVerticalId} 
+                                onChange={e => setSelectedVerticalId(e.target.value)} 
+                                className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors cursor-pointer"
+                            >
+                                {verticals.map(v => (
+                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Module Code (e.g. 1.1) <span className="text-danger">*</span></label>
+                            <input 
+                                required 
+                                placeholder="e.g. 1.1 or 2.3"
+                                value={code} 
+                                onChange={e => setCode(e.target.value)} 
+                                className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white font-mono text-xs outline-none focus:border-primary transition-colors shadow-inner" 
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Due Date</label>
+                            <input 
+                                type="date" 
+                                value={dueDate} 
+                                onChange={e => setDueDate(e.target.value)} 
+                                className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors" 
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Module Title / Name <span className="text-danger">*</span></label>
+                        <input 
+                            required 
+                            placeholder="e.g. Employee Onboarding & KYC"
+                            value={name} 
+                            onChange={e => setName(e.target.value)} 
+                            className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors shadow-inner" 
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Assign Responsible Member</label>
+                        <select 
+                            value={assigneeId} 
+                            onChange={e => setAssigneeId(e.target.value)} 
+                            className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors cursor-pointer"
+                        >
+                            <option value="">-- Unassigned --</option>
+                            {availableUsers.map(u => (
+                                <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.role?.replace('_', ' ')})</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Description / Guidelines</label>
+                        <textarea 
+                            value={description} 
+                            onChange={e => setDescription(e.target.value)} 
+                            placeholder="Provide details about tasks belonging to this module..." 
+                            className="w-full mt-1.5 bg-background border border-border p-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary min-h-[90px] resize-none transition-all shadow-inner" 
+                        />
+                    </div>
+
+                    <div className="pt-4 flex gap-3 border-t border-border/50">
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="flex-1 h-12 rounded-xl bg-danger/10 text-danger border border-danger/30 hover:bg-danger hover:text-white transition-all font-black uppercase tracking-widest text-[10px] shadow-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            disabled={submitting} 
+                            className="flex-[2] h-12 rounded-xl bg-primary text-white font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                        >
+                            {submitting ? 'Creating...' : 'Create Module'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// =========================================================================
+// 2. MODULE DETAILS & EDIT MODAL
+// =========================================================================
+function ModuleModal({ 
+    module, 
+    users, 
+    userRole, 
+    userVerticalId,
+    onClose, 
+    onRefresh 
+}: { 
+    module: any, 
+    users: any[], 
+    userRole: string, 
+    userVerticalId?: string,
+    onClose: () => void, 
+    onRefresh: () => void 
+}) {
+    const canManage = userRole === 'GLOBAL_ADMIN' || userRole === 'ADMIN' || (userRole === 'CO_ADMIN' && module.vertical_id === userVerticalId);
     const [isEditing, setIsEditing] = useState(false);
 
     const [code, setCode] = useState(module.code);
@@ -27,9 +230,9 @@ function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: 
             });
             onRefresh();
             onClose();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('Failed to update module');
+            alert(err.response?.data?.message || 'Failed to update module');
         } finally {
             setSaving(false);
         }
@@ -122,7 +325,7 @@ function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: 
                                 <select value={assigneeId} onChange={e => setAssigneeId(e.target.value)} className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors">
                                     <option value="">-- Unassigned --</option>
                                     {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.role})</option>
+                                        <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.role?.replace('_', ' ')})</option>
                                     ))}
                                 </select>
                             </div>
@@ -144,33 +347,30 @@ function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: 
     );
 }
 
-// Individual Department View
+// =========================================================================
+// 3. INDIVIDUAL DEPARTMENT VIEW
+// =========================================================================
 function IndividualDepartmentView({ 
     vertical, 
     modules, 
-    users, 
     userRole,
+    userVerticalId,
     onBack, 
     onRefresh, 
-    onSelectModule 
+    onSelectModule,
+    onOpenAddModal
 }: { 
     vertical: any, 
     modules: any[], 
-    users: any[], 
     userRole: string,
+    userVerticalId?: string,
     onBack: () => void, 
     onRefresh: () => void, 
-    onSelectModule: (m: any) => void 
+    onSelectModule: (m: any) => void,
+    onOpenAddModal: () => void
 }) {
-    const canManage = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
+    const canManageThisDept = userRole === 'GLOBAL_ADMIN' || userRole === 'ADMIN' || (userRole === 'CO_ADMIN' && vertical.id === userVerticalId);
     const [search, setSearch] = useState('');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newCode, setNewCode] = useState('');
-    const [newName, setNewName] = useState('');
-    const [newDescription, setNewDescription] = useState('');
-    const [newAssigneeId, setNewAssigneeId] = useState('');
-    const [newDueDate, setNewDueDate] = useState('');
-    const [submitting, setSubmitting] = useState(false);
 
     const vModules = modules.filter((m: any) => 
         m.vertical_id === vertical.id && 
@@ -182,42 +382,15 @@ function IndividualDepartmentView({
         )
     );
 
-    const handleAdd = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            await api.post('/modules', { 
-                vertical_id: vertical.id, 
-                code: newCode, 
-                name: newName,
-                description: newDescription || null,
-                assignee_id: newAssigneeId || null,
-                due_date: newDueDate || null
-            });
-            setNewCode('');
-            setNewName('');
-            setNewDescription('');
-            setNewAssigneeId('');
-            setNewDueDate('');
-            setShowAddModal(false);
-            onRefresh();
-        } catch (err) {
-            console.error(err);
-            alert('Failed to add module');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!confirm('Permanently delete this module? Tasks tied to it will lose their module mapping.')) return;
         try {
             await api.delete(`/modules/${id}`);
             onRefresh();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('Failed to delete module');
+            alert(err.response?.data?.message || 'Failed to delete module');
         }
     };
 
@@ -234,9 +407,9 @@ function IndividualDepartmentView({
                 </button>
 
                 <div className="flex items-center gap-3">
-                    {canManage && (
+                    {canManageThisDept && (
                         <button 
-                            onClick={() => setShowAddModal(true)}
+                            onClick={onOpenAddModal}
                             className="h-11 px-5 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center gap-2 shadow-xl shadow-primary/20 shrink-0"
                         >
                             <Plus size={16} /> New Module
@@ -252,6 +425,11 @@ function IndividualDepartmentView({
                         <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-primary/20">
                             Department View
                         </span>
+                        {userRole === 'CO_ADMIN' && vertical.id === userVerticalId && (
+                            <span className="bg-secondary/15 text-secondary px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-secondary/30 flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Your Department
+                            </span>
+                        )}
                         <span className="text-gray-500 text-xs font-bold">•</span>
                         <span className="text-gray-500 text-xs font-bold">{vModules.length} {vModules.length === 1 ? 'Module' : 'Modules'}</span>
                     </div>
@@ -271,7 +449,7 @@ function IndividualDepartmentView({
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full h-12 pl-11 pr-4 bg-background border border-border rounded-xl text-gray-900 dark:text-white outline-none focus:border-primary transition-all text-xs shadow-inner"
                     />
-                    <Search size={16} className="absolute left-4 top-3.5 text-gray-500" />
+                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                 </div>
 
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none"></div>
@@ -291,10 +469,10 @@ function IndividualDepartmentView({
                             {search ? 'Try clearing your search term to view all modules.' : 'Create sub-categories (like 1.1, 1.2, etc.) to organize tasks inside this department.'}
                         </p>
                     </div>
-                    {!search && (
+                    {!search && canManageThisDept && (
                         <button 
-                            onClick={() => setShowAddModal(true)}
-                            className="mt-2 h-11 px-6 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center gap-2"
+                            onClick={onOpenAddModal}
+                            className="mt-2 h-11 px-6 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
                         >
                             <Plus size={16} /> Add First Module
                         </button>
@@ -315,7 +493,7 @@ function IndividualDepartmentView({
                                         <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-xl text-xs font-mono font-black tracking-wider group-hover:bg-primary group-hover:text-white transition-colors">
                                             {m.code}
                                         </span>
-                                        {canManage && (
+                                        {canManageThisDept && (
                                             <button 
                                                 onClick={(e) => handleDelete(m.id, e)} 
                                                 className="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center opacity-70 group-hover:opacity-100"
@@ -366,103 +544,13 @@ function IndividualDepartmentView({
                     })}
                 </div>
             )}
-
-            {/* Add Module Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowAddModal(false)}>
-                    <div className="bg-surface border border-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 md:p-8 border-b border-border/50 flex justify-between items-center bg-background/50">
-                            <div>
-                                <h3 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Add New Module</h3>
-                                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">Under {vertical.name}</p>
-                            </div>
-                            <button onClick={() => setShowAddModal(false)} className="w-9 h-9 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleAdd} className="p-6 md:p-8 space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Module Code (e.g. 1.1)</label>
-                                    <input 
-                                        required 
-                                        placeholder="e.g. 1.1 or 2.3"
-                                        value={newCode} 
-                                        onChange={e => setNewCode(e.target.value)} 
-                                        className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white font-mono text-xs outline-none focus:border-primary transition-colors" 
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Due Date</label>
-                                    <input 
-                                        type="date" 
-                                        value={newDueDate} 
-                                        onChange={e => setNewDueDate(e.target.value)} 
-                                        className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors" 
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Module Title / Name</label>
-                                <input 
-                                    required 
-                                    placeholder="e.g. Human Resource Management"
-                                    value={newName} 
-                                    onChange={e => setNewName(e.target.value)} 
-                                    className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors" 
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Assign Responsible Person</label>
-                                <select 
-                                    value={newAssigneeId} 
-                                    onChange={e => setNewAssigneeId(e.target.value)} 
-                                    className="w-full mt-1.5 h-12 bg-background border border-border px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors"
-                                >
-                                    <option value="">-- Unassigned --</option>
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.first_name} {u.last_name} ({u.role})</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-[9px] text-gray-500 font-black uppercase tracking-widest pl-1">Description</label>
-                                <textarea 
-                                    value={newDescription} 
-                                    onChange={e => setNewDescription(e.target.value)} 
-                                    placeholder="Detailed guidelines or tasks under this module..." 
-                                    className="w-full mt-1.5 bg-background border border-border p-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary min-h-[100px] resize-none transition-all shadow-inner" 
-                                />
-                            </div>
-
-                            <div className="pt-4 flex gap-3 border-t border-border/50">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowAddModal(false)} 
-                                    className="flex-1 h-12 rounded-xl bg-danger/10 text-danger border border-danger/30 hover:bg-danger hover:text-white transition-all font-black uppercase tracking-widest text-[10px] shadow-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    disabled={submitting} 
-                                    className="flex-[2] h-12 rounded-xl bg-primary text-white font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
-                                >
-                                    {submitting ? 'Creating...' : 'Create Module'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
 
+// =========================================================================
+// 4. MAIN MODULES PAGE COMPONENT
+// =========================================================================
 export default function ModulesPage() {
     const [verticals, setVerticals] = useState<any[]>([]);
     const [modules, setModules] = useState<any[]>([]);
@@ -471,8 +559,12 @@ export default function ModulesPage() {
     const [search, setSearch] = useState('');
     const [selectedModule, setSelectedModule] = useState<any>(null);
     const [activeVertical, setActiveVertical] = useState<any>(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+
     const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     const userRole: string = user.role || '';
+    const userVerticalId: string = user.vertical_id || '';
+    const canManageModules = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
 
     const fetchData = async () => {
         setFetching(true);
@@ -525,13 +617,28 @@ export default function ModulesPage() {
 
     return (
         <div className="p-4 md:p-8 space-y-6 md:space-y-10 relative">
+            {/* View / Edit Module Modal */}
             {selectedModule && (
                 <ModuleModal 
                     module={selectedModule}
                     users={users} 
                     userRole={userRole}
+                    userVerticalId={userVerticalId}
                     onClose={() => setSelectedModule(null)} 
                     onRefresh={fetchData} 
+                />
+            )}
+
+            {/* Add Module Modal (Available from Top Header & Department View) */}
+            {showAddModal && (
+                <AddModuleModal 
+                    verticals={verticals}
+                    users={users}
+                    defaultVerticalId={activeVertical?.id || (userRole === 'CO_ADMIN' ? userVerticalId : undefined)}
+                    userRole={userRole}
+                    userVerticalId={userVerticalId}
+                    onClose={() => setShowAddModal(false)}
+                    onRefresh={fetchData}
                 />
             )}
 
@@ -540,11 +647,12 @@ export default function ModulesPage() {
                 <IndividualDepartmentView 
                     vertical={activeVertical}
                     modules={modules}
-                    users={users}
                     userRole={userRole}
+                    userVerticalId={userVerticalId}
                     onBack={() => setActiveVertical(null)}
                     onRefresh={fetchData}
                     onSelectModule={setSelectedModule}
+                    onOpenAddModal={() => setShowAddModal(true)}
                 />
             ) : (
                 /* Main Departments Catalog Grid */
@@ -558,19 +666,30 @@ export default function ModulesPage() {
                             </div>
                             <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tighter">System Modules</h1>
                             <p className="text-gray-500 text-[9px] md:text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 opacity-60">
-                                Select any department to view and manage its modules individually
+                                {userRole === 'CO_ADMIN' ? 'Manage modules belonging to your department or explore organization structure' : 'Select any department to view and manage its modules individually'}
                             </p>
                         </div>
                         
-                        <div className="w-full lg:w-96 relative">
-                            <input
-                                type="text"
-                                placeholder="Search departments or modules..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full h-14 pl-12 pr-6 bg-surface border border-border rounded-2xl text-gray-900 dark:text-white outline-none focus:border-primary transition-all text-xs shadow-2xl"
-                            />
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                            <div className="w-full sm:w-80 lg:w-96 relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search departments or modules..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full h-12 md:h-14 pl-12 pr-6 bg-surface border border-border rounded-2xl text-gray-900 dark:text-white outline-none focus:border-primary transition-all text-xs shadow-2xl"
+                                />
+                                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                            </div>
+
+                            {canManageModules && (
+                                <button
+                                    onClick={() => setShowAddModal(true)}
+                                    className="h-12 md:h-14 px-6 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 shrink-0 whitespace-nowrap"
+                                >
+                                    <Plus size={18} /> New Module
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -589,23 +708,36 @@ export default function ModulesPage() {
                             {filteredVerticals.map(v => {
                                 const deptModules = modules.filter((m: any) => m.vertical_id === v.id);
                                 const moduleCount = deptModules.length;
+                                const isUserDept = userRole === 'CO_ADMIN' && v.id === userVerticalId;
+
                                 return (
                                     <div 
                                         key={v.id}
                                         onClick={() => setActiveVertical(v)}
-                                        className="bg-surface border border-border hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 rounded-[1.75rem] md:rounded-[2rem] p-6 md:p-8 flex flex-col justify-between gap-6 transition-all group cursor-pointer relative overflow-hidden min-h-[180px] hover:scale-[1.02]"
+                                        className={`bg-surface border ${
+                                            isUserDept 
+                                                ? 'border-primary/60 shadow-xl shadow-primary/10 ring-1 ring-primary/30' 
+                                                : 'border-border hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10'
+                                        } rounded-[1.75rem] md:rounded-[2rem] p-6 md:p-8 flex flex-col justify-between gap-6 transition-all group cursor-pointer relative overflow-hidden min-h-[190px] hover:scale-[1.02]`}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <div className="p-3.5 rounded-2xl bg-primary/5 text-primary border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors">
+                                            <div className={`p-3.5 rounded-2xl ${isUserDept ? 'bg-primary text-white' : 'bg-primary/5 text-primary border border-primary/10 group-hover:bg-primary group-hover:text-white'} transition-colors`}>
                                                 <Building2 size={22} />
                                             </div>
-                                            <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
-                                                moduleCount > 0 
-                                                    ? 'bg-secondary/10 text-secondary border-secondary/20' 
-                                                    : 'bg-background text-gray-500 border-border'
-                                            }`}>
-                                                {moduleCount} {moduleCount === 1 ? 'Module' : 'Modules'}
-                                            </span>
+                                            <div className="flex flex-col items-end gap-1.5">
+                                                <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+                                                    moduleCount > 0 
+                                                        ? 'bg-secondary/10 text-secondary border-secondary/20' 
+                                                        : 'bg-background text-gray-500 border-border'
+                                                }`}>
+                                                    {moduleCount} {moduleCount === 1 ? 'Module' : 'Modules'}
+                                                </span>
+                                                {isUserDept && (
+                                                    <span className="bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-primary/20">
+                                                        Your Sector
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div>
@@ -635,4 +767,3 @@ export default function ModulesPage() {
         </div>
     );
 }
-
