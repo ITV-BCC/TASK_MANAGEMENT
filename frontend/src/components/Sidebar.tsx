@@ -6,9 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 const allNavItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN', 'EMPLOYEE'] },
   { label: 'Tasks', icon: ListTodo, path: '/dashboard/tasks', roles: ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN', 'EMPLOYEE'] },
-  { label: 'Users', icon: Users, path: '/dashboard/users', roles: ['GLOBAL_ADMIN', 'ADMIN'] },
+  { label: 'Users', icon: Users, path: '/dashboard/users', roles: ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'] },
   { label: 'Departments', icon: Building2, path: '/dashboard/verticals', roles: ['GLOBAL_ADMIN'] },
-  { label: 'Modules', icon: FolderTree, path: '/dashboard/modules', roles: ['GLOBAL_ADMIN'] },
+  { label: 'Modules', icon: FolderTree, path: '/dashboard/modules', roles: ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'] },
   { label: 'Profile', icon: UserCircle, path: '/dashboard/profile', roles: ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN', 'EMPLOYEE'] },
 ];
 
