@@ -78,6 +78,15 @@ const getUsers = async (req, res) => {
             countParams = [searchPattern];
         }
         else {
+            // Re-fetch the user's current vertical_id fresh from DB
+            // (JWT may be stale if department was assigned after login)
+            const freshUser = await db_1.default.query('SELECT vertical_id FROM users WHERE id = $1', [req.user?.id]);
+            const freshVerticalId = freshUser.rows[0]?.vertical_id ?? req.user?.vertical_id ?? null;
+            if (!freshVerticalId) {
+                // No department assigned — return empty list with message
+                res.status(200).json({ success: true, users: [], pagination: { total: 0, page: Number(page), limit: Number(limit), pages: 0 }, message: 'No department assigned' });
+                return;
+            }
             query = `
                 SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.is_active, u.vertical_id, v.name as vertical_name
                 FROM users u
@@ -87,8 +96,8 @@ const getUsers = async (req, res) => {
                 LIMIT $3 OFFSET $4
             `;
             countQuery = `SELECT COUNT(*) FROM users WHERE vertical_id = $1 AND (first_name ILIKE $2 OR last_name ILIKE $2 OR email ILIKE $2)`;
-            params = [req.user?.vertical_id, searchPattern, limit, offset];
-            countParams = [req.user?.vertical_id, searchPattern];
+            params = [freshVerticalId, searchPattern, limit, offset];
+            countParams = [freshVerticalId, searchPattern];
         }
         const [usersRes, countRes] = await Promise.all([
             db_1.default.query(query, params),
