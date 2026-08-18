@@ -378,7 +378,7 @@ export default function TasksPage() {
           </div>
       </div>
 
-      {selectedTasks.length > 0 && (
+      {user.role !== 'EMPLOYEE' && selectedTasks.length > 0 && (
           <div className="bg-primary/15 border border-primary/30 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4 animate-in fade-in duration-150">
               <div className="flex items-center gap-4">
                   <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white ml-2">{selectedTasks.length} Tasks Selected</span>
@@ -414,17 +414,19 @@ export default function TasksPage() {
             <table className="w-full text-left border-collapse">
               <thead className="bg-primary text-white shadow-md">
                 <tr className="text-[11px] font-black uppercase tracking-wider text-white">
-                  <th className="py-4 px-4 w-12 text-center text-white">
-                    <input
-                      type="checkbox"
-                      checked={tasks.length > 0 && selectedTasks.length === tasks.length}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedTasks(tasks.map(t => t.id));
-                        else setSelectedTasks([]);
-                      }}
-                      className="w-4 h-4 cursor-pointer accent-secondary rounded"
-                    />
-                  </th>
+                  {user.role !== 'EMPLOYEE' && (
+                    <th className="py-4 px-4 w-12 text-center text-white">
+                      <input
+                        type="checkbox"
+                        checked={tasks.length > 0 && selectedTasks.length === tasks.length}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedTasks(tasks.map(t => t.id));
+                          else setSelectedTasks([]);
+                        }}
+                        className="w-4 h-4 cursor-pointer accent-secondary rounded"
+                      />
+                    </th>
+                  )}
                   <th className="py-4 px-3 w-10 text-center text-white/90">#</th>
                   <th className="py-4 px-4 min-w-[240px] text-white">Task Objective</th>
                   <th className="py-4 px-4 min-w-[170px] text-white">Department</th>
@@ -447,15 +449,17 @@ export default function TasksPage() {
                         isSelected ? 'bg-primary/10' : ''
                       }`}
                     >
-                      {/* Checkbox */}
-                      <td className="py-4 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => setSelectedTasks(prev => prev.includes(task.id) ? prev.filter(tid => tid !== task.id) : [...prev, task.id])}
-                          className="w-4 h-4 cursor-pointer accent-primary rounded"
-                        />
-                      </td>
+                      {/* Checkbox (Admins/Co-Admins only) */}
+                      {user.role !== 'EMPLOYEE' && (
+                        <td className="py-4 px-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => setSelectedTasks(prev => prev.includes(task.id) ? prev.filter(tid => tid !== task.id) : [...prev, task.id])}
+                            className="w-4 h-4 cursor-pointer accent-primary rounded"
+                          />
+                        </td>
+                      )}
 
                       {/* S.No */}
                       <td className="py-4 px-3 text-center text-[10px] font-black text-gray-400">
