@@ -27,11 +27,11 @@ export const createVertical = async (req: AuthRequest, res: Response): Promise<v
 };
 
 // ==========================================
-// Get all Verticals
+// Get all Verticals (Ordered Chronologically - First Come, First Served)
 // ==========================================
 export const getVerticals = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const result = await pool.query("SELECT * FROM verticals ORDER BY created_at DESC");
+        const result = await pool.query("SELECT * FROM verticals ORDER BY created_at ASC");
         res.status(200).json({ success: true, verticals: result.rows });
     } catch (err) {
         console.error(err);
