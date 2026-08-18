@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, UserMinus } from 'lucide-react';
+import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, UserMinus, Mail, Building2 } from 'lucide-react';
 import api from '../../api';
 
 const ROLES = ['ADMIN', 'CO_ADMIN', 'EMPLOYEE'];
 const roleColors: Record<string, string> = {
-  GLOBAL_ADMIN: 'bg-primary/20 text-primary',
-  ADMIN: 'bg-purple-400/20 text-purple-400',
-  CO_ADMIN: 'bg-blue-400/20 text-blue-400',
-  EMPLOYEE: 'bg-secondary/20 text-secondary',
+  GLOBAL_ADMIN: 'bg-primary/20 text-primary border border-primary/30',
+  ADMIN: 'bg-purple-400/20 text-purple-400 border border-purple-400/30',
+  CO_ADMIN: 'bg-blue-400/20 text-blue-400 border border-blue-400/30',
+  EMPLOYEE: 'bg-emerald-400/20 text-emerald-400 border border-emerald-400/30',
 };
 
 // ---- Edit User Modal ----
@@ -210,7 +210,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 md:mb-10 gap-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Personnel Directory</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tighter">Personnel Directory</h1>
           <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 opacity-60">User Management & Access Control</p>
         </div>
         {canCreateUsers && (
@@ -223,27 +223,30 @@ export default function UsersPage() {
       {/* Constraints Bar */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
           <div className="flex bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl gap-2 items-center w-full lg:w-auto lg:flex-1 lg:max-w-xl">
-              <Search size={16} className="text-gray-600 ml-4" />
+              <Search size={16} className="text-gray-400 ml-4 shrink-0" />
               <input 
                 type="text" 
-                className="bg-transparent border-none text-[11px] md:text-xs text-white px-2 md:px-4 py-2 outline-none flex-1"
+                placeholder="Search personnel by name, email, or department..."
+                className="bg-transparent border-none text-[11px] md:text-xs text-gray-900 dark:text-white px-2 md:px-4 py-2 outline-none flex-1 placeholder:text-gray-400"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
           </div>
 
           <div className="flex items-center gap-3 bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl w-full sm:w-auto justify-center">
-             <button onClick={() => fetchData(pagination.page - 1)} disabled={pagination.page <= 1} className="p-2 text-gray-500 hover:text-white disabled:opacity-30"><ChevronLeft size={18}/></button>
-             <span className="text-[10px] font-black text-gray-400 px-2 uppercase tracking-widest">Entry {((pagination.page-1)*10)+1}-{Math.min(pagination.page*10, pagination.total)} of {pagination.total}</span>
-             <button onClick={() => fetchData(pagination.page + 1)} disabled={pagination.page >= pagination.pages} className="p-2 text-gray-500 hover:text-white disabled:opacity-30"><ChevronRight size={18}/></button>
+             <button onClick={() => fetchData(pagination.page - 1)} disabled={pagination.page <= 1} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-all"><ChevronLeft size={18}/></button>
+             <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 px-2 uppercase tracking-widest">
+               Entry {pagination.total === 0 ? '0' : ((pagination.page-1)*10)+1}-{Math.min(pagination.page*10, pagination.total)} of {pagination.total}
+             </span>
+             <button onClick={() => fetchData(pagination.page + 1)} disabled={pagination.page >= pagination.pages} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-all"><ChevronRight size={18}/></button>
           </div>
       </div>
 
       {selectedUsers.length > 0 && (
-          <div className="bg-danger/10 border border-danger/30 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4">
+          <div className="bg-danger/10 border border-danger/30 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4 animate-in fade-in duration-150">
               <div className="flex items-center gap-4">
-                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-white ml-2">{selectedUsers.length} Users Selected</span>
-                  <button onClick={() => setSelectedUsers([])} className="text-gray-400 hover:text-white text-[9px] font-bold uppercase tracking-widest underline decoration-gray-600 underline-offset-4">Clear</button>
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white ml-2">{selectedUsers.length} Users Selected</span>
+                  <button onClick={() => setSelectedUsers([])} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white text-[9px] font-bold uppercase tracking-widest underline decoration-gray-400 underline-offset-4">Clear</button>
               </div>
               <button onClick={async () => {
                   if (!confirm(`Deactivate ${selectedUsers.length} selected users?`)) return;
@@ -258,56 +261,162 @@ export default function UsersPage() {
           </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
+      {/* TABLE VIEW (Column Wise) */}
+      <div className="bg-surface border border-border/80 rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
         {fetching ? (
-            <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
+            <div className="py-24 text-center text-gray-500 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
                 <Loader2 className="animate-spin text-primary" size={32} />
                 <span>Syncing Personnel Database...</span>
             </div>
         ) : users.length === 0 ? (
-            <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Personnel Found in This Sector</div>
-        ) : users.map((u, idx) => (
-            <div key={u.id} className="bg-surface border border-border rounded-2xl md:rounded-3xl flex flex-col xl:flex-row xl:items-center hover:border-primary/20 transition-all group relative overflow-hidden shadow-2xl">
-
-                {/* S.No + Checkbox Panel */}
-                <div className="w-full xl:w-16 bg-background/50 border-b xl:border-b-0 xl:border-r border-border flex xl:flex-col items-center justify-between xl:justify-center p-3 xl:py-6 shrink-0">
-                    <span className="text-gray-500 font-black text-[10px] tracking-widest">{(pagination.page - 1) * pagination.limit + idx + 1}</span>
-                    <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(u.id)}
-                        onChange={() => setSelectedUsers(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])}
-                        className="w-5 h-5 cursor-pointer accent-primary rounded"
-                    />
-                </div>
-
-                {/* User Info */}
-                <div className="flex items-center gap-4 md:gap-6 flex-1 p-5 md:p-6">
-                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center font-black text-xs shadow-inner shrink-0 ${roleColors[u.role]}`}>
-                        {(u.first_name?.[0] || 'U')}{(u.last_name?.[0] || '')}
-                    </div>
-                    <div className="overflow-hidden">
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                            <h3 className="text-base md:text-lg font-bold text-white tracking-tight truncate">{u.first_name || 'Unknown'} {u.last_name || 'Member'}</h3>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${roleColors[u.role]}`}>{u.role?.replace('_', ' ') || 'EMPLOYEE'}</span>
-                        </div>
-                        <p className="text-[11px] md:text-xs text-gray-500 font-medium mt-1 truncate">{u.email || 'no-email'} • <span className="text-primary/70">{u.vertical_name || 'System Level Access'}</span></p>
-                    </div>
-                </div>
-
-                <div className="flex items-center justify-end xl:justify-center gap-2 mt-5 xl:mt-0 transition-opacity p-5 pt-0 md:p-6 md:pt-0 xl:p-0 xl:pr-6">
-                    {!u.is_active && <span className="bg-danger/10 text-danger text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mr-2 hidden xs:block">Deactivated</span>}
-                    <button onClick={() => setEditModal(u)} className="p-3 md:p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" title="Edit Profile"><Edit2 size={16} /></button>
-                    <button onClick={() => setResetModal(u)} className="p-3 md:p-3.5 rounded-xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 hover:bg-yellow-400 hover:text-white transition-all shadow-sm" title="Override Key"><KeyRound size={16} /></button>
-                    {u.role !== 'GLOBAL_ADMIN' && (
-                        <button onClick={async () => { await api.put(`/users/${u.id}/toggle-status`, {}); fetchData(); }} className={`p-3 md:p-3.5 rounded-xl bg-background border border-border transition-all shadow-sm ${u.is_active ? 'text-gray-500 hover:text-danger hover:bg-danger/5' : 'text-secondary bg-secondary/5 hover:bg-secondary/10'}`} title="System Access">
-                            <Power size={16} />
-                        </button>
-                    )}
-                </div>
-                {/* Status Indicator */}
-                <div className={`absolute top-0 left-0 xl:static xl:hidden h-full xl:h-0 w-1 xl:w-0 ${u.is_active ? 'bg-secondary' : 'bg-danger'} opacity-20`}></div>
+            <div className="py-28 text-center text-gray-500 font-black uppercase tracking-widest text-[10px]">
+                No Personnel Found in This Sector
             </div>
-        ))}
+        ) : (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border/60 bg-background/50 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                  <th className="py-4 px-4 w-12 text-center">
+                    <input
+                      type="checkbox"
+                      checked={users.length > 0 && selectedUsers.length === users.length}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedUsers(users.map(u => u.id));
+                        else setSelectedUsers([]);
+                      }}
+                      className="w-4 h-4 cursor-pointer accent-primary rounded"
+                    />
+                  </th>
+                  <th className="py-4 px-3 w-10 text-center text-gray-400">#</th>
+                  <th className="py-4 px-4 min-w-[200px]">Team Member</th>
+                  <th className="py-4 px-4 min-w-[220px]">Email Address</th>
+                  <th className="py-4 px-4 min-w-[130px]">Role</th>
+                  <th className="py-4 px-4 min-w-[180px]">Department</th>
+                  <th className="py-4 px-4 text-center min-w-[110px]">Status</th>
+                  <th className="py-4 px-6 text-right min-w-[150px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40 text-xs">
+                {users.map((u, idx) => {
+                  const isSelected = selectedUsers.includes(u.id);
+                  const sNo = (pagination.page - 1) * pagination.limit + idx + 1;
+                  return (
+                    <tr
+                      key={u.id}
+                      className={`transition-colors group hover:bg-primary/5 ${
+                        isSelected ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-4 px-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => setSelectedUsers(prev => prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id])}
+                          className="w-4 h-4 cursor-pointer accent-primary rounded"
+                        />
+                      </td>
+
+                      {/* S.No */}
+                      <td className="py-4 px-3 text-center text-[10px] font-black text-gray-400">
+                        {sNo}
+                      </td>
+
+                      {/* Member */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 shadow-sm ${roleColors[u.role] || 'bg-primary/10 text-primary'}`}>
+                            {(u.first_name?.[0] || 'U')}{(u.last_name?.[0] || '')}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-900 dark:text-white truncate">
+                              {u.first_name || 'Unknown'} {u.last_name || 'Member'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Email */}
+                      <td className="py-4 px-4 text-gray-600 dark:text-gray-300 font-medium">
+                        <div className="flex items-center gap-2 truncate max-w-[240px]">
+                          <Mail size={13} className="text-gray-400 shrink-0" />
+                          <span className="truncate">{u.email || 'no-email'}</span>
+                        </div>
+                      </td>
+
+                      {/* Role */}
+                      <td className="py-4 px-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${roleColors[u.role] || 'bg-gray-500/20 text-gray-400'}`}>
+                          {u.role?.replace(/_/g, ' ') || 'EMPLOYEE'}
+                        </span>
+                      </td>
+
+                      {/* Department */}
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-background/80 border border-border/70 px-2.5 py-1 rounded-lg">
+                          <Building2 size={12} className="text-primary shrink-0" />
+                          <span className="truncate max-w-[160px]">{u.vertical_name || 'System Level Access'}</span>
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-4 px-4 text-center">
+                        {u.is_active ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-danger/10 text-danger border border-danger/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setEditModal(u)}
+                            className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                            title="Edit Profile"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => setResetModal(u)}
+                            className="p-2 rounded-xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-500 hover:bg-yellow-400 hover:text-white transition-all shadow-sm"
+                            title="Reset Password"
+                          >
+                            <KeyRound size={14} />
+                          </button>
+                          {u.role !== 'GLOBAL_ADMIN' && (
+                            <button
+                              onClick={async () => {
+                                await api.put(`/users/${u.id}/toggle-status`, {});
+                                fetchData();
+                              }}
+                              className={`p-2 rounded-xl border transition-all shadow-sm ${
+                                u.is_active
+                                  ? 'bg-background border-border text-gray-400 hover:text-danger hover:border-danger/30 hover:bg-danger/10'
+                                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white'
+                              }`}
+                              title={u.is_active ? 'Deactivate User' : 'Activate User'}
+                            >
+                              <Power size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Slide-in Registration Panel */}
