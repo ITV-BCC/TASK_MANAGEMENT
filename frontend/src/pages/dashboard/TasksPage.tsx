@@ -469,88 +469,146 @@ export default function TasksPage() {
         ))}
       </div>
 
-      {/* NEW TASK OVERLAY */}
+      {/* NEW TASK MODAL */}
       {showTaskForm && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[200] flex justify-end">
-            <form onSubmit={handleCreateTask} className="bg-surface w-full max-w-xl border-l border-white/5 p-8 md:p-16 overflow-y-auto animate-in slide-in-from-right duration-500 flex flex-col">
-                <div className="flex justify-between items-center mb-12 flex-shrink-0">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[200] flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200" onClick={() => setShowTaskForm(false)}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden my-8 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="p-6 md:p-8 border-b border-border/50 flex justify-between items-center bg-background/50">
                     <div>
-                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">New Task</h2>
-                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.4em] mt-2">Task Details</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="p-1 rounded-md bg-primary/10 text-primary"><Plus size={14}/></span>
+                            <span className="text-[10px] text-primary font-black uppercase tracking-widest">Task Management</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Create New Task</h2>
                     </div>
-                    <button type="button" onClick={() => setShowTaskForm(false)} className="p-4 bg-background border border-border text-gray-500 hover:text-white rounded-2xl md:rounded-3xl transition-all"><X size={24}/></button>
+                    <button 
+                        type="button" 
+                        onClick={() => setShowTaskForm(false)} 
+                        className="w-10 h-10 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm"
+                    >
+                        <X size={18}/>
+                    </button>
                 </div>
                 
-                <div className="space-y-8 flex-1">
-                    <div className="space-y-3">
-                        <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Objective Title</label>
-                        <input required type="text" className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-2xl md:rounded-3xl px-6 md:px-8 text-white focus:border-primary transition-all shadow-inner outline-none" placeholder="Task Name..." value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
+                {/* Form Body */}
+                <form onSubmit={handleCreateTask} className="p-6 md:p-8 space-y-5">
+                    {/* Task Title */}
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 pl-1">Task Title <span className="text-danger">*</span></label>
+                        <input 
+                            required 
+                            type="text" 
+                            className="w-full mt-1.5 h-12 bg-background border border-border rounded-xl px-4 text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-all shadow-inner" 
+                            placeholder="e.g. Prepare Monthly Financial Report" 
+                            value={taskForm.title} 
+                            onChange={e => setTaskForm({...taskForm, title: e.target.value})} 
+                        />
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Detailed Intelligence</label>
-                        <textarea className="w-full bg-background/50 border border-border rounded-2xl md:rounded-[2rem] p-6 md:p-8 text-white focus:border-primary transition-all shadow-inner h-32 md:h-40 outline-none resize-none" placeholder="What needs to be done?" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
+                    {/* Task Description */}
+                    <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 pl-1">Task Description / Instructions</label>
+                        <textarea 
+                            className="w-full mt-1.5 bg-background border border-border rounded-xl p-4 text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-all shadow-inner min-h-[90px] resize-none" 
+                            placeholder="Provide clear details and requirements for this task..." 
+                            value={taskForm.description} 
+                            onChange={e => setTaskForm({...taskForm, description: e.target.value})} 
+                        />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-                        <div className="space-y-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Priority Hash</label>
-                            <select className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-2xl md:rounded-3xl px-6 md:px-8 text-white focus:border-primary outline-none" value={taskForm.priority} onChange={e => setTaskForm({...taskForm, priority: e.target.value})}>
-                                <option value="HIGH">High Criticality</option>
-                                <option value="MEDIUM">Standard</option>
-                                <option value="LOW">Flexible</option>
+                    {/* Priority & Due Date Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 pl-1">Priority Level</label>
+                            <select 
+                                className="w-full mt-1.5 h-12 bg-background border border-border rounded-xl px-4 text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors cursor-pointer" 
+                                value={taskForm.priority} 
+                                onChange={e => setTaskForm({...taskForm, priority: e.target.value})}
+                            >
+                                <option value="HIGH">🔴 High Priority</option>
+                                <option value="MEDIUM">🟡 Medium Priority</option>
+                                <option value="LOW">🟢 Low Priority</option>
                             </select>
                         </div>
-                        <div className="space-y-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Timeline Lock</label>
-                            <input type="date" className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-2xl md:rounded-3xl px-6 md:px-8 text-white focus:border-primary outline-none" value={taskForm.due_date} onChange={e => setTaskForm({...taskForm, due_date: e.target.value})} />
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 pl-1">Due Date</label>
+                            <input 
+                                type="date" 
+                                className="w-full mt-1.5 h-12 bg-background border border-border rounded-xl px-4 text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors" 
+                                value={taskForm.due_date} 
+                                onChange={e => setTaskForm({...taskForm, due_date: e.target.value})} 
+                            />
                         </div>
                     </div>
 
+                    {/* Department Multi-Select (Global Admin only) */}
                     {user.role === 'GLOBAL_ADMIN' && (
-                        <div className="space-y-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Department Vectors</label>
-                            <div className="bg-background/50 border border-border rounded-2xl md:rounded-3xl p-4 max-h-48 overflow-y-auto space-y-2">
-                                <label className="flex items-center gap-3 p-2 hover:bg-surface rounded-xl cursor-pointer">
-                                  <input type="checkbox" checked={taskForm.vertical_ids.length === 0} onChange={() => setTaskForm({...taskForm, vertical_ids: []})} className="w-5 h-5 accent-primary bg-surface border-border"/>
-                                  <span className="text-white text-xs font-black uppercase tracking-widest">Global Organization (All)</span>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 pl-1">Assign to Departments</label>
+                            <div className="mt-1.5 bg-background border border-border rounded-xl p-3 max-h-36 overflow-y-auto space-y-1.5 custom-scrollbar">
+                                <label className="flex items-center gap-2.5 p-2 hover:bg-surface rounded-lg cursor-pointer transition-colors">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={taskForm.vertical_ids.length === 0} 
+                                    onChange={() => setTaskForm({...taskForm, vertical_ids: []})} 
+                                    className="w-4 h-4 accent-primary rounded cursor-pointer"
+                                  />
+                                  <span className="text-gray-900 dark:text-white text-xs font-black uppercase tracking-wider">All Departments (Global Task)</span>
                                 </label>
                                 {verticals.map(v => (
-                                  <label key={v.id} className="flex items-center gap-3 p-2 hover:bg-surface rounded-xl cursor-pointer">
-                                    <input type="checkbox" checked={taskForm.vertical_ids.includes(v.id)} onChange={(e) => {
-                                      if (e.target.checked) setTaskForm({...taskForm, vertical_ids: [...taskForm.vertical_ids, v.id]});
-                                      else setTaskForm({...taskForm, vertical_ids: taskForm.vertical_ids.filter(id => id !== v.id)});
-                                    }} className="w-5 h-5 accent-primary bg-surface border-border"/>
-                                    <span className="text-gray-300 text-xs font-bold uppercase tracking-wider">{v.name}</span>
+                                  <label key={v.id} className="flex items-center gap-2.5 p-2 hover:bg-surface rounded-lg cursor-pointer transition-colors">
+                                    <input 
+                                      type="checkbox" 
+                                      checked={taskForm.vertical_ids.includes(v.id)} 
+                                      onChange={(e) => {
+                                        if (e.target.checked) setTaskForm({...taskForm, vertical_ids: [...taskForm.vertical_ids, v.id]});
+                                        else setTaskForm({...taskForm, vertical_ids: taskForm.vertical_ids.filter(id => id !== v.id)});
+                                      }} 
+                                      className="w-4 h-4 accent-primary rounded cursor-pointer"
+                                    />
+                                    <span className="text-gray-700 dark:text-gray-300 text-xs font-semibold">{v.name}</span>
                                   </label>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {/* Module Selection - shows when exactly 1 vertical selected or non-global admin */}
+                    {/* Module Selection */}
                     {formModules.length > 0 && (
-                        <div className="space-y-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Module <span className="text-gray-600 normal-case font-normal">(optional)</span></label>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 pl-1">Associated Module <span className="text-gray-400 font-normal lowercase">(optional)</span></label>
                             <select
-                                className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-2xl md:rounded-3xl px-6 md:px-8 text-white focus:border-primary outline-none"
+                                className="w-full mt-1.5 h-12 bg-background border border-border rounded-xl px-4 text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-colors cursor-pointer"
                                 value={taskForm.module_id}
                                 onChange={e => setTaskForm({...taskForm, module_id: e.target.value})}
                             >
-                                <option value="">— No Module (General) —</option>
+                                <option value="">— No Module (General Department Task) —</option>
                                 {formModules.map(m => (
                                     <option key={m.id} value={m.id}>{m.code} · {m.name}</option>
                                 ))}
                             </select>
                         </div>
                     )}
-                </div>
 
-                <div className="mt-12 md:mt-20 flex flex-col xs:flex-row gap-4 flex-shrink-0">
-                    <button type="submit" className="flex-1 h-16 md:h-20 bg-primary text-white rounded-2xl md:rounded-[2rem] font-black uppercase tracking-widest text-xs md:text-sm hover:bg-primaryHover transition-all shadow-2xl shadow-primary/20">Commit Objective</button>
-                    <button type="button" onClick={() => setShowTaskForm(false)} className="h-16 md:h-20 w-full xs:w-32 bg-background border border-border text-gray-500 rounded-2xl md:rounded-[2rem] flex items-center justify-center hover:text-white transition-all shrink-0 text-xs font-bold uppercase tracking-widest">Cancel</button>
-                </div>
-            </form>
+                    {/* Action Buttons */}
+                    <div className="pt-4 flex gap-3 border-t border-border/50">
+                        <button 
+                            type="button" 
+                            onClick={() => setShowTaskForm(false)} 
+                            className="flex-1 h-12 bg-background border border-border text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all font-black uppercase tracking-widest text-[10px]"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="flex-[2] h-12 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-lg shadow-primary/20"
+                        >
+                            Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
       )}
 
@@ -559,22 +617,25 @@ export default function TasksPage() {
       
       {/* ASSIGN MODAL */}
       {assignModal.open && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[210] flex items-center justify-center p-4">
-            <div className="bg-surface border border-border rounded-[2rem] md:rounded-[3rem] w-full max-w-md p-6 md:p-10 shadow-2xl">
-                <div className="flex justify-between items-center mb-8 md:mb-10">
-                    <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">Assign Resource</h2>
-                    <button onClick={() => setAssignModal({ open: false, task: null })} className="text-gray-500 hover:text-white"><X size={20}/></button>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[210] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setAssignModal({ open: false, task: null })}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-border/50">
+                    <div>
+                        <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Assign Team Member</h2>
+                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">Select personnel for this task</p>
+                    </div>
+                    <button onClick={() => setAssignModal({ open: false, task: null })} className="w-8 h-8 flex items-center justify-center bg-background border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"><X size={16}/></button>
                 </div>
-                <div className="space-y-2 md:space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar">
                     {users.filter(u => (u.role === 'EMPLOYEE' || u.role === 'CO_ADMIN') && (!assignModal.task?.vertical_id || u.vertical_id === assignModal.task.vertical_id)).map(emp => {
                         const isAssigned = assignModal.task?.assigned_users?.some((u: any) => u.id === emp.id);
                         return (
-                            <button key={emp.id} onClick={() => handleAssignTask(emp.id)} className={`w-full p-4 md:p-5 bg-background border rounded-xl md:rounded-2xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
-                                 <div className="flex items-center gap-3 md:gap-4">
-                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center font-bold text-xs ${isAssigned ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>{emp.first_name[0]}</div>
+                            <button key={emp.id} onClick={() => handleAssignTask(emp.id)} className={`w-full p-3.5 bg-background border rounded-xl flex items-center justify-between transition-all group ${isAssigned ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}>
+                                 <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${isAssigned ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>{emp.first_name[0]}</div>
                                     <div className="text-left">
-                                        <p className="text-white font-bold text-xs md:text-sm">{emp.first_name} {emp.last_name}</p>
-                                        <p className="text-[8px] md:text-[10px] text-gray-600 uppercase font-black">{emp.vertical_name || 'System'}</p>
+                                        <p className="text-gray-900 dark:text-white font-bold text-xs">{emp.first_name} {emp.last_name}</p>
+                                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-wider">{emp.vertical_name || 'System'}</p>
                                     </div>
                                  </div>
                                  <div className={isAssigned ? 'text-secondary' : 'text-primary'}>
@@ -590,26 +651,26 @@ export default function TasksPage() {
 
       {/* Chat Modal */}
       {chatModal.open && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[150] flex items-center justify-center p-2 md:p-4">
-            <div className="bg-surface border border-border rounded-[2rem] md:rounded-[2.5rem] w-full max-w-2xl h-[90vh] md:h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-                <div className="p-6 md:p-10 border-b border-border flex justify-between items-center bg-background/50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setChatModal({ open: false, task: null, data: [] })}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="p-6 border-b border-border/50 flex justify-between items-center bg-background/50">
                     <div>
-                        <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">Comms Channel</h2>
-                        <p className="text-gray-500 text-[9px] font-bold uppercase tracking-widest mt-1 truncate max-w-[200px]">Ref: {chatModal.task?.title}</p>
+                        <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Task Discussion & Comments</h2>
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-0.5 truncate max-w-[280px]">Task: {chatModal.task?.title}</p>
                     </div>
-                    <button onClick={() => setChatModal({ open: false, task: null, data: [] })} className="p-3 bg-background border border-border text-gray-500 hover:text-white rounded-xl md:rounded-2xl transition-all"><X size={20}/></button>
+                    <button onClick={() => setChatModal({ open: false, task: null, data: [] })} className="w-8 h-8 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"><X size={16}/></button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-4 md:space-y-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                     {chatModal.data.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center opacity-20">
-                            <MessageSquare size={48} className="mb-4" />
-                            <p className="font-black uppercase tracking-widest text-[9px]">No Logs Found</p>
+                        <div className="h-full flex flex-col items-center justify-center opacity-30">
+                            <MessageSquare size={40} className="mb-3 text-primary" />
+                            <p className="font-black uppercase tracking-widest text-[10px]">No comments yet</p>
                         </div>
                     ) : chatModal.data.map((msg, i) => (
                         <div key={i} className={`flex flex-col ${msg.user_id === user.id ? 'items-end' : 'items-start'}`}>
-                            <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1.5 px-1">{msg.first_name} • {msg.role.replace('_', ' ')}</p>
-                            <div className={`max-w-[85%] p-4 md:p-5 rounded-2xl md:rounded-3xl text-xs md:text-sm font-medium leading-relaxed ${msg.user_id === user.id ? 'bg-primary text-white rounded-tr-none' : 'bg-background border border-border text-gray-300 rounded-tl-none'}`}>
+                            <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-1 px-1">{msg.first_name} • {msg.role.replace('_', ' ')}</p>
+                            <div className={`max-w-[85%] p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${msg.user_id === user.id ? 'bg-primary text-white rounded-tr-none shadow-md shadow-primary/10' : 'bg-background border border-border text-gray-800 dark:text-gray-200 rounded-tl-none'}`}>
                                 {msg.comment}
                             </div>
                         </div>
@@ -617,15 +678,15 @@ export default function TasksPage() {
                     <div ref={chatEndRef} />
                 </div>
 
-                <form onSubmit={postComment} className="p-6 md:p-10 border-t border-border bg-background/50 flex gap-3 md:gap-4">
+                <form onSubmit={postComment} className="p-4 border-t border-border/50 bg-background/50 flex gap-3">
                     <input 
                         type="text" 
                         value={newComment} 
                         onChange={e => setNewComment(e.target.value)}
-                        placeholder="Secure message..." 
-                        className="flex-1 bg-surface border border-border h-14 md:h-16 px-6 md:px-8 rounded-xl md:rounded-2xl text-white text-xs md:text-sm outline-none focus:border-primary transition-all shadow-inner"
+                        placeholder="Write a message or update..." 
+                        className="flex-1 bg-surface border border-border h-12 px-4 rounded-xl text-gray-900 dark:text-white text-xs outline-none focus:border-primary transition-all shadow-inner"
                     />
-                    <button type="submit" className="w-14 md:w-16 h-14 md:h-16 bg-primary text-white rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-primaryHover transition-all shadow-xl shadow-primary/20"><Send size={18}/></button>
+                    <button type="submit" className="w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center hover:bg-primaryHover transition-all shadow-lg shadow-primary/20 shrink-0"><Send size={16}/></button>
                 </form>
             </div>
         </div>
@@ -633,29 +694,32 @@ export default function TasksPage() {
 
       {/* Attachments Modal */}
       {attachModal.open && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[140] flex items-center justify-center p-4">
-            <div className="bg-surface border border-border rounded-[2rem] md:rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden">
-                <div className="p-6 md:p-10 border-b border-border flex justify-between items-center bg-background/50">
-                    <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">File Upload</h2>
-                    <button onClick={() => setAttachModal({ open: false, task: null, data: [] })} className="p-3 bg-background border border-border text-gray-500 hover:text-white rounded-xl md:rounded-2xl transition-all"><X size={20}/></button>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[140] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setAttachModal({ open: false, task: null, data: [] })}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="p-6 border-b border-border/50 flex justify-between items-center bg-background/50">
+                    <div>
+                        <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Task Files & Attachments</h2>
+                        <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">Documents & proof of work</p>
+                    </div>
+                    <button onClick={() => setAttachModal({ open: false, task: null, data: [] })} className="w-8 h-8 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"><X size={16}/></button>
                 </div>
-                <div className="p-6 md:p-10 space-y-3 md:space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
                     {attachModal.data.map(f => (
-                        <div key={f.id} className="bg-background border border-border p-3 md:p-4 rounded-2xl flex items-center justify-between">
-                            <div className="overflow-hidden mr-4">
-                                <p className="text-white text-[11px] md:text-xs font-black truncate uppercase tracking-tight">{f.file_name}</p>
-                                <p className="text-[9px] text-gray-600 font-bold uppercase mt-1">By {f.first_name}</p>
+                        <div key={f.id} className="bg-background border border-border p-3.5 rounded-xl flex items-center justify-between">
+                            <div className="overflow-hidden mr-3">
+                                <p className="text-gray-900 dark:text-white text-xs font-bold truncate">{f.file_name}</p>
+                                <p className="text-[9px] text-gray-500 uppercase mt-0.5">Uploaded by {f.first_name}</p>
                             </div>
-                            <div className="flex gap-1.5 md:gap-2">
-                                <button onClick={() => handleDownload(f.id, f.file_name)} className="p-3 bg-surface text-gray-400 hover:text-secondary rounded-xl md:rounded-2xl transition-all" title="Download File"><Download size={14}/></button>
-                                {(user.id === f.uploaded_by || user.role === 'GLOBAL_ADMIN') && <button onClick={() => deleteFile(f.id)} className="p-3 bg-surface text-gray-400 hover:text-danger rounded-xl md:rounded-2xl transition-all"><Trash2 size={14}/></button>}
+                            <div className="flex gap-1.5">
+                                <button onClick={() => handleDownload(f.id, f.file_name)} className="p-2 bg-surface border border-border text-gray-500 hover:text-primary rounded-lg transition-all" title="Download File"><Download size={14}/></button>
+                                {(user.id === f.uploaded_by || user.role === 'GLOBAL_ADMIN') && <button onClick={() => deleteFile(f.id)} className="p-2 bg-surface border border-border text-gray-500 hover:text-danger rounded-lg transition-all" title="Delete File"><Trash2 size={14}/></button>}
                             </div>
                         </div>
                     ))}
-                    <div className="mt-4 pt-4 border-t border-border/30">
+                    <div className="pt-3 border-t border-border/50">
                          <input type="file" onChange={handleFileUpload} className="hidden" id="task-upload" />
-                         <label htmlFor="task-upload" className="w-full h-14 md:h-16 border-2 border-dashed border-border rounded-2xl flex items-center justify-center gap-3 text-gray-500 font-black uppercase tracking-widest text-[9px] cursor-pointer hover:border-secondary hover:text-secondary transition-all">
-                             {uploading ? <Loader2 className="animate-spin" size={18}/> : <Upload size={18}/>} {uploading ? 'Processing...' : 'File Upload'}
+                         <label htmlFor="task-upload" className="w-full h-12 border-2 border-dashed border-border hover:border-primary rounded-xl flex items-center justify-center gap-2.5 text-gray-500 hover:text-primary font-black uppercase tracking-widest text-[10px] cursor-pointer transition-all">
+                             {uploading ? <Loader2 className="animate-spin" size={16}/> : <Upload size={16}/>} {uploading ? 'Uploading...' : 'Click to Upload Document'}
                          </label>
                     </div>
                 </div>
@@ -665,56 +729,56 @@ export default function TasksPage() {
 
       {/* Rework Reason Modal */}
       {reworkModal.open && (
-         <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[160] flex items-center justify-center p-4">
-            <div className="bg-surface border border-border rounded-[2.5rem] w-full max-w-sm shadow-2xl p-8 md:p-10">
-                <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter mb-6">Correction Log</h2>
+         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[160] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setReworkModal({ open: false, task: null, reason: '' })}>
+            <div className="bg-surface border border-border rounded-3xl w-full max-w-md shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight mb-2">Request Task Rework</h2>
+                <p className="text-gray-500 text-xs mb-4">Please specify feedback or changes required for the assigned member.</p>
                 <textarea 
-                    className="w-full bg-background border border-border rounded-2xl md:rounded-3xl p-5 md:p-6 text-white text-xs md:text-sm outline-none focus:border-danger transition-all h-32 md:h-40 resize-none mb-6 shadow-inner"
-                    placeholder="Describe specific errors..."
+                    className="w-full bg-background border border-border rounded-xl p-3.5 text-gray-900 dark:text-white text-xs outline-none focus:border-danger transition-all h-28 resize-none mb-4 shadow-inner"
+                    placeholder="Explain what needs correction..."
                     value={reworkModal.reason}
                     onChange={e => setReworkModal({...reworkModal, reason: e.target.value})}
                 />
-                <button onClick={submitRework} className="w-full h-14 md:h-16 bg-danger text-white rounded-xl md:rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[9px] md:text-[10px] hover:bg-danger/80 transition-all shadow-2xl shadow-danger/30">Commit Order</button>
+                <div className="flex gap-3">
+                    <button onClick={() => setReworkModal({ open: false, task: null, reason: '' })} className="flex-1 h-11 bg-background border border-border text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Cancel</button>
+                    <button onClick={submitRework} className="flex-1 h-11 bg-danger text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-danger/80 transition-all shadow-lg shadow-danger/20">Submit Rework</button>
+                </div>
             </div>
          </div>
       )}
 
       {/* History Modal (Timeline) */}
       {historyModal.open && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[100] flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-[2rem] md:rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden">
-            <div className="p-6 md:p-8 border-b border-border flex justify-between items-center bg-background/50">
-              <h2 className="text-white font-black text-xl md:text-2xl tracking-tighter">Audit Chronology</h2>
-              <button onClick={() => setHistoryModal({ open: false, task: null, data: [] })} className="text-gray-500 hover:text-white"><X size={20}/></button>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setHistoryModal({ open: false, task: null, data: [] })}>
+          <div className="bg-surface border border-border rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-border/50 flex justify-between items-center bg-background/50">
+              <div>
+                <h2 className="text-gray-900 dark:text-white font-black text-xl tracking-tight">Status & Activity History</h2>
+                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mt-0.5">Chronological audit log</p>
+              </div>
+              <button onClick={() => setHistoryModal({ open: false, task: null, data: [] })} className="w-8 h-8 flex items-center justify-center bg-surface border border-border rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all"><X size={16}/></button>
             </div>
-            <div className="p-6 md:p-10 max-h-[60vh] overflow-y-auto space-y-6 relative custom-scrollbar">
-              {/* Connector Line */}
-              <div className="absolute left-[51px] md:left-[51px] top-10 bottom-10 w-0.5 bg-border opacity-40"></div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4 relative custom-scrollbar">
               {historyModal.data.map((h, i) => (
-                <div key={i} className="flex gap-6 relative z-10 items-start">
-                   {/* Milestone Dot */}
-                   <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border-2 shadow-lg ${
-                     i === 0
-                       ? 'bg-primary border-primary ring-4 ring-primary/20 shadow-primary/30'
-                       : h.new_status === 'COMPLETED' || h.new_status === 'REVIEWED'
-                       ? 'bg-secondary border-secondary ring-2 ring-secondary/20'
+                <div key={i} className="flex gap-4 items-start bg-background/50 border border-border/40 p-3.5 rounded-2xl">
+                   <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
+                     h.new_status === 'COMPLETED' || h.new_status === 'REVIEWED'
+                       ? 'bg-secondary ring-4 ring-secondary/20'
                        : h.new_status === 'REWORK'
-                       ? 'bg-danger border-danger ring-2 ring-danger/20'
+                       ? 'bg-danger ring-4 ring-danger/20'
                        : h.new_status === 'IN_PROGRESS'
-                       ? 'bg-yellow-400 border-yellow-400 ring-2 ring-yellow-400/20'
-                       : 'bg-gray-700 border-gray-600'
-                   }`}>
-                     <div className="w-2 h-2 rounded-full bg-white opacity-90"></div>
-                   </div>
-                   <div className="flex-1 pb-2">
-                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1">
-                       <p className="text-white text-xs md:text-sm font-black uppercase tracking-tight">
+                       ? 'bg-yellow-400 ring-4 ring-yellow-400/20'
+                       : 'bg-primary ring-4 ring-primary/20'
+                   }`}></div>
+                   <div className="flex-1">
+                     <div className="flex flex-wrap items-center justify-between gap-2">
+                       <span className="text-gray-900 dark:text-white text-xs font-bold uppercase tracking-tight">
                          {h.new_status.replace(/_/g, ' ')}
-                       </p>
-                       <span className="text-[9px] text-gray-500 font-mono italic">{new Date(h.changed_at).toLocaleString()}</span>
+                       </span>
+                       <span className="text-[10px] text-gray-500 font-mono">{new Date(h.changed_at).toLocaleString()}</span>
                      </div>
-                     {h.remark && <p className="text-[10px] md:text-[11px] text-danger font-bold bg-danger/5 border border-danger/10 px-3 py-2 rounded-xl mt-1 mb-1 leading-relaxed">"{h.remark}"</p>}
-                     <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest opacity-60">By: {h.first_name}</p>
+                     {h.remark && <p className="text-xs text-danger font-medium bg-danger/10 border border-danger/20 px-3 py-1.5 rounded-xl mt-2">"{h.remark}"</p>}
+                     <p className="text-[10px] text-gray-500 mt-1 font-bold">Action by: <span className="text-primary">{h.first_name}</span></p>
                    </div>
                 </div>
               ))}
