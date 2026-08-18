@@ -301,9 +301,9 @@ export default function UsersPage() {
         ) : (
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 border-b-2 border-primary/20">
-                <tr className="text-[10.5px] font-black uppercase tracking-widest text-primary">
-                  <th className="py-4 px-4 w-12 text-center">
+              <thead className="bg-primary text-white shadow-md">
+                <tr className="text-[11px] font-black uppercase tracking-wider text-white">
+                  <th className="py-4 px-4 w-12 text-center text-white">
                     <input
                       type="checkbox"
                       checked={users.length > 0 && selectedUsers.length === users.length}
@@ -311,16 +311,16 @@ export default function UsersPage() {
                         if (e.target.checked) setSelectedUsers(users.map(u => u.id));
                         else setSelectedUsers([]);
                       }}
-                      className="w-4 h-4 cursor-pointer accent-primary rounded"
+                      className="w-4 h-4 cursor-pointer accent-secondary rounded"
                     />
                   </th>
-                  <th className="py-4 px-3 w-10 text-center text-primary/80">#</th>
-                  <th className="py-4 px-4 min-w-[200px] text-primary">Team Member</th>
-                  <th className="py-4 px-4 min-w-[220px] text-primary">Email Address</th>
-                  <th className="py-4 px-4 min-w-[130px] text-primary">Role</th>
-                  <th className="py-4 px-4 min-w-[180px] text-primary">Department</th>
-                  <th className="py-4 px-4 text-center min-w-[110px] text-primary">Status</th>
-                  <th className="py-4 px-6 text-right min-w-[150px] text-primary">Actions</th>
+                  <th className="py-4 px-3 w-10 text-center text-white/90">#</th>
+                  <th className="py-4 px-4 min-w-[200px] text-white">Team Member</th>
+                  <th className="py-4 px-4 min-w-[220px] text-white">Email Address</th>
+                  <th className="py-4 px-4 min-w-[130px] text-white">Role</th>
+                  <th className="py-4 px-4 min-w-[180px] text-white">Department</th>
+                  <th className="py-4 px-4 text-center min-w-[110px] text-white">Status</th>
+                  <th className="py-4 px-6 text-right min-w-[150px] text-white">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 text-xs">
