@@ -4,9 +4,11 @@ import { protect, requireGlobalAdmin } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// To hit these routes, the user MUST be logged in (protect) and be a Global Admin
+// Allow all authenticated users to read verticals/departments
+router.get('/', protect, getVerticals);
+
+// Only Global Admins can create, modify, or delete verticals
 router.post('/', protect, requireGlobalAdmin, createVertical);
-router.get('/', protect, requireGlobalAdmin, getVerticals);
 router.put('/:id', protect, requireGlobalAdmin, updateVertical);
 router.delete('/:id', protect, requireGlobalAdmin, deleteVertical);
 

@@ -164,7 +164,7 @@ export default function UsersPage() {
     try {
       const [uRes, vRes, meRes] = await Promise.all([
           api.get(`/users?page=${page}&limit=${pagination.limit}&search=${search}`), 
-          api.get('/verticals'),
+          api.get('/verticals').catch(() => ({ data: { verticals: [] } })),
           api.get('/auth/me').catch(() => ({ data: { user: null } }))
       ]);
       setUsers(uRes.data.users || []);
