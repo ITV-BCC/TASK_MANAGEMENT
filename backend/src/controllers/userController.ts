@@ -9,19 +9,33 @@ import { AuthRequest } from '../middleware/authMiddleware';
 // ==========================================
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { vertical_id, first_name, last_name, email, password, role } = req.body;
-        
-        // Security: A regular Admin/Co-Admin cannot create a Global Admin
-        if (req.user?.role !== 'GLOBAL_ADMIN') {
+        let { vertical_id, first_name, last_name, email, password, role } = req.body;
+        const requesterRole = req.user?.role;
+        const requesterVerticalId = req.user?.vertical_id;
+
+        // GLOBAL_ADMIN can create any role in any department
+        // ADMIN/CO_ADMIN cannot create GLOBAL_ADMIN or ADMIN roles
+        if (requesterRole !== 'GLOBAL_ADMIN') {
             if (role === 'GLOBAL_ADMIN' || role === 'ADMIN') {
                 res.status(403).json({ success: false, message: 'You do not have permission to create this role type.' });
                 return;
             }
-            // Admins can only create users in their OWN vertical
-            if (req.user?.vertical_id && req.user.vertical_id !== vertical_id) {
-                res.status(403).json({ success: false, message: 'You can only create employees within your own Vertical.' });
+        }
+
+        // CO_ADMIN: can only create EMPLOYEE role users, forced into their own vertical
+        if (requesterRole === 'CO_ADMIN') {
+            if (role !== 'EMPLOYEE') {
+                res.status(403).json({ success: false, message: 'Co-Admins can only create Employee accounts.' });
                 return;
             }
+            // Force the new user into CO_ADMIN's own department — no override allowed
+            vertical_id = requesterVerticalId;
+        }
+
+        // ADMIN (non-global): can only create users in their own vertical
+        if (requesterRole === 'ADMIN' && requesterVerticalId && requesterVerticalId !== vertical_id) {
+            res.status(403).json({ success: false, message: 'You can only create employees within your own department.' });
+            return;
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -31,11 +45,10 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
             [vertical_id, first_name, last_name, email, hashedPassword, role]
         );
 
-        // Return the plain password ONCE so Admin can share it with the employee
         res.status(201).json({
             success: true,
             user: result.rows[0],
-            plain_password: password // Shown once, never stored
+            plain_password: password
         });
     } catch (err) {
         console.error(err);

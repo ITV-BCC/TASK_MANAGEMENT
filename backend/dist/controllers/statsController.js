@@ -81,12 +81,17 @@ const getDashboardStats = async (req, res) => {
         const statsResult = await db_1.default.query(statsQuery, params);
         stats = statsResult.rows[0];
         // 3. Last 7 Days Completion Trend
+        const offsetWeeks = parseInt(req.query.offset || '0');
+        const intervalModifierDay = offsetWeeks * 7;
+        // e.g. if offset is -1 (previous week), current_date - 7 days to current_date - 13 days
+        const startInterval = 6 - (offsetWeeks * 7);
+        const endInterval = 0 - (offsetWeeks * 7);
         const trendRes = await db_1.default.query(`
             SELECT 
                 TO_CHAR(d.day, 'DD Mon') as label,
                 COUNT(t.id) as count
             FROM (
-                SELECT generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval) as day
+                SELECT generate_series(CURRENT_DATE - INTERVAL '${startInterval} days', CURRENT_DATE - INTERVAL '${endInterval} days', '1 day'::interval) as day
             ) d
             LEFT JOIN tasks t ON DATE(t.updated_at) = DATE(d.day) AND t.status IN ('COMPLETED', 'REVIEWED')
             ${role !== 'GLOBAL_ADMIN' ? (role === 'EMPLOYEE' ?

@@ -25,11 +25,11 @@ const createVertical = async (req, res) => {
 };
 exports.createVertical = createVertical;
 // ==========================================
-// Get all Verticals
+// Get all Verticals (Ordered Chronologically - First Come, First Served)
 // ==========================================
 const getVerticals = async (req, res) => {
     try {
-        const result = await db_1.default.query("SELECT * FROM verticals ORDER BY created_at DESC");
+        const result = await db_1.default.query("SELECT * FROM verticals ORDER BY created_at ASC");
         res.status(200).json({ success: true, verticals: result.rows });
     }
     catch (err) {

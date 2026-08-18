@@ -33,5 +33,6 @@ const upload = (0, multer_1.default)({
 });
 router.post('/upload', authMiddleware_1.protect, upload.single('file'), attachmentController_1.uploadAttachment);
 router.get('/:task_id', authMiddleware_1.protect, attachmentController_1.getAttachments);
+router.get('/download/:id', authMiddleware_1.protect, attachmentController_1.downloadAttachment);
 router.delete('/:id', authMiddleware_1.protect, attachmentController_1.deleteAttachment);
 exports.default = router;

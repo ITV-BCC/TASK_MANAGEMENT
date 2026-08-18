@@ -138,12 +138,26 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 1 });
   
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const isCoAdmin = currentUser.role === 'CO_ADMIN';
+  const canCreateUsers = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(currentUser.role);
+
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '', password: '', role: 'EMPLOYEE', vertical_id: '' });
   const [pwdModal, setPwdModal] = useState<{ name: string; email: string; password: string } | null>(null);
   const [resetModal, setResetModal] = useState<any | null>(null);
   const [editModal, setEditModal] = useState<any | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+  // When CO_ADMIN opens the form, pre-fill their own vertical
+  const openAddForm = () => {
+    if (isCoAdmin) {
+      setForm({ first_name: '', last_name: '', email: '', password: '', role: 'EMPLOYEE', vertical_id: currentUser.vertical_id || '' });
+    } else {
+      setForm({ first_name: '', last_name: '', email: '', password: '', role: 'EMPLOYEE', vertical_id: '' });
+    }
+    setShowTaskForm(true);
+  };
 
   const fetchData = async (page = pagination.page) => {
     setFetching(true);
@@ -192,9 +206,11 @@ export default function UsersPage() {
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Personnel Directory</h1>
           <p className="text-gray-500 text-[10px] uppercase font-bold tracking-[0.2em] mt-1.5 opacity-60">User Management & Access Control</p>
         </div>
-        <button onClick={() => setShowTaskForm(true)} className="h-12 md:h-14 w-full sm:w-auto px-6 md:px-8 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2">
-            <Plus size={18} /> Add User
-        </button>
+        {canCreateUsers && (
+          <button onClick={openAddForm} className="h-12 md:h-14 w-full sm:w-auto px-6 md:px-8 bg-primary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2">
+              <Plus size={18} /> Add User
+          </button>
+        )}
       </div>
 
       {/* Constraints Bar */}
@@ -324,16 +340,31 @@ export default function UsersPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
                         <div className="space-y-3">
                             <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Access Role</label>
-                            <select value={form.role} onChange={e => setForm({...form, role: e.target.value})} className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-xl md:rounded-[2rem] px-6 md:px-8 text-white focus:border-primary outline-none text-sm">
-                                {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
-                            </select>
+                            {isCoAdmin ? (
+                                <div className="w-full h-14 md:h-16 bg-background/30 border border-border rounded-xl md:rounded-[2rem] px-6 md:px-8 flex items-center">
+                                    <span className="text-gray-400 text-sm font-bold uppercase tracking-wider">Employee</span>
+                                </div>
+                            ) : (
+                                <select value={form.role} onChange={e => setForm({...form, role: e.target.value})} className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-xl md:rounded-[2rem] px-6 md:px-8 text-white focus:border-primary outline-none text-sm">
+                                    {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                                </select>
+                            )}
                         </div>
                         <div className="space-y-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Sector Assignment</label>
-                            <select required value={form.vertical_id} onChange={e => setForm({...form, vertical_id: e.target.value})} className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-xl md:rounded-[2rem] px-6 md:px-8 text-white focus:border-primary outline-none text-sm">
-                                <option value="">Global System</option>
-                                {verticals.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                            </select>
+                            <label className="text-xs font-black uppercase tracking-widest text-gray-500 px-1">Department</label>
+                            {isCoAdmin ? (
+                                <div className="w-full h-14 md:h-16 bg-background/30 border border-primary/30 rounded-xl md:rounded-[2rem] px-6 md:px-8 flex items-center gap-3">
+                                    <span className="text-primary text-sm font-bold truncate">
+                                        {verticals.find(v => v.id === currentUser.vertical_id)?.name || 'Your Department'}
+                                    </span>
+                                    <span className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-auto shrink-0">Locked</span>
+                                </div>
+                            ) : (
+                                <select required value={form.vertical_id} onChange={e => setForm({...form, vertical_id: e.target.value})} className="w-full h-14 md:h-16 bg-background/50 border border-border rounded-xl md:rounded-[2rem] px-6 md:px-8 text-white focus:border-primary outline-none text-sm">
+                                    <option value="">Global System</option>
+                                    {verticals.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                </select>
+                            )}
                         </div>
                     </div>
                 </div>

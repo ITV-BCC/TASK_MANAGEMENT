@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.toggleUserStatus = exports.resetPassword = exports.getUsers = exports.createUser = void 0;
+exports.updateUser = exports.toggleUserStatus = exports.changePassword = exports.resetPassword = exports.getUsers = exports.createUser = void 0;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const db_1 = __importDefault(require("../config/db"));
 // ==========================================
@@ -12,26 +12,37 @@ const db_1 = __importDefault(require("../config/db"));
 // ==========================================
 const createUser = async (req, res) => {
     try {
-        const { vertical_id, first_name, last_name, email, password, role } = req.body;
-        // Security: A regular Admin/Co-Admin cannot create a Global Admin
-        if (req.user?.role !== 'GLOBAL_ADMIN') {
+        let { vertical_id, first_name, last_name, email, password, role } = req.body;
+        const requesterRole = req.user?.role;
+        const requesterVerticalId = req.user?.vertical_id;
+        // GLOBAL_ADMIN can create any role in any department
+        // ADMIN/CO_ADMIN cannot create GLOBAL_ADMIN or ADMIN roles
+        if (requesterRole !== 'GLOBAL_ADMIN') {
             if (role === 'GLOBAL_ADMIN' || role === 'ADMIN') {
                 res.status(403).json({ success: false, message: 'You do not have permission to create this role type.' });
                 return;
             }
-            // Admins can only create users in their OWN vertical
-            if (req.user?.vertical_id && req.user.vertical_id !== vertical_id) {
-                res.status(403).json({ success: false, message: 'You can only create employees within your own Vertical.' });
+        }
+        // CO_ADMIN: can only create EMPLOYEE role users, forced into their own vertical
+        if (requesterRole === 'CO_ADMIN') {
+            if (role !== 'EMPLOYEE') {
+                res.status(403).json({ success: false, message: 'Co-Admins can only create Employee accounts.' });
                 return;
             }
+            // Force the new user into CO_ADMIN's own department — no override allowed
+            vertical_id = requesterVerticalId;
+        }
+        // ADMIN (non-global): can only create users in their own vertical
+        if (requesterRole === 'ADMIN' && requesterVerticalId && requesterVerticalId !== vertical_id) {
+            res.status(403).json({ success: false, message: 'You can only create employees within your own department.' });
+            return;
         }
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const result = await db_1.default.query("INSERT INTO users (vertical_id, first_name, last_name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, first_name, last_name, email, role, vertical_id", [vertical_id, first_name, last_name, email, hashedPassword, role]);
-        // Return the plain password ONCE so Admin can share it with the employee
         res.status(201).json({
             success: true,
             user: result.rows[0],
-            plain_password: password // Shown once, never stored
+            plain_password: password
         });
     }
     catch (err) {
@@ -135,6 +146,37 @@ const resetPassword = async (req, res) => {
     }
 };
 exports.resetPassword = resetPassword;
+// ==========================================
+// Change Own Password
+// ==========================================
+const changePassword = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { current_password, new_password } = req.body;
+        if (!current_password || !new_password || new_password.length < 6) {
+            res.status(400).json({ success: false, message: 'Invalid input. New password must be at least 6 characters.' });
+            return;
+        }
+        const userCheck = await db_1.default.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+        if (userCheck.rowCount === 0) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+        const isValid = await bcrypt_1.default.compare(current_password, userCheck.rows[0].password_hash);
+        if (!isValid) {
+            res.status(401).json({ success: false, message: 'Incorrect current password.' });
+            return;
+        }
+        const hashedPassword = await bcrypt_1.default.hash(new_password, 10);
+        await db_1.default.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedPassword, userId]);
+        res.status(200).json({ success: true, message: 'Password changed successfully.' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not change password.' });
+    }
+};
+exports.changePassword = changePassword;
 // ==========================================
 // Toggle User Active/Inactive (Admin Only)
 // ==========================================

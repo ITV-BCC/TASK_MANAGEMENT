@@ -9,4 +9,6 @@ router.post('/', authMiddleware_1.protect, taskController_1.createTask);
 router.post('/assign', authMiddleware_1.protect, taskController_1.assignTask);
 router.put('/:id/status', authMiddleware_1.protect, taskController_1.updateTaskStatus);
 router.get('/', authMiddleware_1.protect, taskController_1.getTasks);
+router.post('/bulk-delete', authMiddleware_1.protect, taskController_1.deleteTasks);
+router.post('/bulk-assign', authMiddleware_1.protect, taskController_1.bulkAssignTasks);
 exports.default = router;

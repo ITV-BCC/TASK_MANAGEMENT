@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteAttachment = exports.getAttachments = exports.uploadAttachment = void 0;
+exports.downloadAttachment = exports.deleteAttachment = exports.getAttachments = exports.uploadAttachment = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -72,3 +72,28 @@ const deleteAttachment = async (req, res) => {
     }
 };
 exports.deleteAttachment = deleteAttachment;
+// ==========================================
+// Download Attachment (forces browser download)
+// ==========================================
+const downloadAttachment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const fileCheck = await db_1.default.query("SELECT file_path, file_name FROM task_attachments WHERE id = $1", [id]);
+        if (fileCheck.rowCount === 0) {
+            res.status(404).json({ success: false, message: 'File not found' });
+            return;
+        }
+        const filePath = path_1.default.join(__dirname, '../../uploads', fileCheck.rows[0].file_path);
+        const originalName = fileCheck.rows[0].file_name;
+        if (!fs_1.default.existsSync(filePath)) {
+            res.status(404).json({ success: false, message: 'File not found on disk' });
+            return;
+        }
+        res.download(filePath, originalName);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not download file' });
+    }
+};
+exports.downloadAttachment = downloadAttachment;

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireGlobalAdmin = exports.protect = void 0;
+exports.requireAdminOrCoAdmin = exports.requireGlobalAdmin = exports.protect = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 // ==========================================
@@ -37,3 +37,16 @@ const requireGlobalAdmin = (req, res, next) => {
     }
 };
 exports.requireGlobalAdmin = requireGlobalAdmin;
+// ==========================================
+// Middleware: Global Admin, Admin, or Co-Admin
+// ==========================================
+const requireAdminOrCoAdmin = (req, res, next) => {
+    const allowedRoles = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'];
+    if (req.user && allowedRoles.includes(req.user.role)) {
+        next();
+    }
+    else {
+        res.status(403).json({ success: false, message: 'Permission Denied - Admins and Co-Admins Only' });
+    }
+};
+exports.requireAdminOrCoAdmin = requireAdminOrCoAdmin;

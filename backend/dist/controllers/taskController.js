@@ -3,22 +3,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTasks = exports.updateTaskStatus = exports.assignTask = exports.createTask = void 0;
+exports.bulkAssignTasks = exports.deleteTasks = exports.getTasks = exports.updateTaskStatus = exports.assignTask = exports.createTask = void 0;
 const db_1 = __importDefault(require("../config/db"));
 // ==========================================
 // Create a New Task (Admin / Co-Admin)
 // ==========================================
 const createTask = async (req, res) => {
     try {
-        const { title, description, priority, due_date, vertical_id } = req.body;
+        const { title, description, priority, due_date, vertical_id, module_id } = req.body;
         const userRole = req.user?.role;
         if (userRole === 'EMPLOYEE') {
             res.status(403).json({ success: false, message: 'Employees cannot create tasks.' });
             return;
         }
         // Use the vertical_id provided (if Global Admin) or force the Admin's own vertical
-        const finalVerticalId = userRole === 'GLOBAL_ADMIN' ? vertical_id : req.user?.vertical_id;
-        const result = await db_1.default.query("INSERT INTO tasks (vertical_id, created_by, title, description, priority, due_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", [finalVerticalId, req.user?.id, title, description, priority || 'MEDIUM', due_date]);
+        const finalVerticalId = userRole === 'GLOBAL_ADMIN' ? (vertical_id || null) : req.user?.vertical_id;
+        const result = await db_1.default.query("INSERT INTO tasks (title, description, priority, due_date, vertical_id, created_by, module_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *", [title, description, priority || 'MEDIUM', due_date || null, finalVerticalId, req.user?.id, module_id || null]);
         res.status(201).json({ success: true, task: result.rows[0] });
     }
     catch (err) {
@@ -101,11 +101,13 @@ const getTasks = async (req, res) => {
         const searchPattern = `%${search}%`;
         let selectFields = `
             t.*, v.name as vertical_name,
+            m.code as module_code, m.name as module_name,
             COALESCE(sub_assign.assigned_users, '[]'::json) as assigned_users
         `;
         let fromClause = `
             tasks t
             LEFT JOIN verticals v ON t.vertical_id = v.id
+            LEFT JOIN modules m ON t.module_id = m.id
             LEFT JOIN (
                 SELECT ta.task_id, 
                        JSON_AGG(JSON_BUILD_OBJECT('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as assigned_users
@@ -117,14 +119,9 @@ const getTasks = async (req, res) => {
         let whereClauses = [];
         let params = [];
         // 1. Role-based scoping
-        if (req.user?.role === 'EMPLOYEE') {
-            fromClause += ` JOIN task_assignments ta ON t.id = ta.task_id`;
-            params.push(req.user.id);
-            whereClauses.push(`ta.employee_id = $${params.length}`);
-        }
-        else if (req.user?.role !== 'GLOBAL_ADMIN') {
+        if (req.user?.role !== 'GLOBAL_ADMIN') {
             params.push(req.user?.vertical_id);
-            whereClauses.push(`t.vertical_id = $${params.length}`);
+            whereClauses.push(`(t.vertical_id = $${params.length} OR t.vertical_id IS NULL)`);
         }
         // 2. Search filter
         params.push(searchPattern);
@@ -198,3 +195,54 @@ const getTasks = async (req, res) => {
     }
 };
 exports.getTasks = getTasks;
+// ==========================================
+// Delete Task(s)
+// ==========================================
+const deleteTasks = async (req, res) => {
+    try {
+        const { task_ids } = req.body;
+        if (req.user?.role === 'EMPLOYEE') {
+            res.status(403).json({ success: false, message: 'Employees cannot delete tasks' });
+            return;
+        }
+        if (!task_ids || task_ids.length === 0) {
+            res.status(400).json({ success: false, message: 'No tasks specified' });
+            return;
+        }
+        await db_1.default.query("DELETE FROM tasks WHERE id = ANY($1::uuid[])", [task_ids]);
+        res.status(200).json({ success: true, message: 'Tasks deleted successfully' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not delete tasks' });
+    }
+};
+exports.deleteTasks = deleteTasks;
+// ==========================================
+// Bulk Assign Tasks
+// ==========================================
+const bulkAssignTasks = async (req, res) => {
+    try {
+        const { task_ids, employee_id } = req.body;
+        if (req.user?.role === 'EMPLOYEE') {
+            res.status(403).json({ success: false, message: 'Employees cannot assign tasks.' });
+            return;
+        }
+        if (!task_ids || task_ids.length === 0 || !employee_id) {
+            res.status(400).json({ success: false, message: 'Invalid data provided' });
+            return;
+        }
+        // Add assignment for each task
+        for (const task_id of task_ids) {
+            await db_1.default.query("INSERT INTO task_assignments (task_id, employee_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [task_id, employee_id]);
+            // Update task status to ASSIGNED if it is currently CREATED
+            await db_1.default.query("UPDATE tasks SET status = 'ASSIGNED', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND status = 'CREATED'", [task_id]);
+        }
+        res.status(200).json({ success: true, message: 'Tasks assigned successfully.' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Could not assign tasks' });
+    }
+};
+exports.bulkAssignTasks = bulkAssignTasks;
