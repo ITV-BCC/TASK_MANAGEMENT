@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, FolderTree, Trash2, X, Plus, Search, Calendar, User, Edit3, ArrowLeft, Building2, ChevronRight, Layers } from 'lucide-react';
 import api from '../../api';
 
-function ModuleModal({ module, users, onClose, onRefresh }: { module: any, users: any[], onClose: () => void, onRefresh: () => void }) {
+function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: any, users: any[], userRole: string, onClose: () => void, onRefresh: () => void }) {
+    const canManage = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
     const [isEditing, setIsEditing] = useState(false);
 
     const [code, setCode] = useState(module.code);
@@ -90,9 +91,11 @@ function ModuleModal({ module, users, onClose, onRefresh }: { module: any, users
                             </div>
 
                             <div className="pt-2 flex gap-3">
-                                <button onClick={() => setIsEditing(true)} className="flex-1 h-12 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-primaryHover transition-all shadow-xl shadow-primary/20">
-                                    <Edit3 size={14} /> Edit Module
-                                </button>
+                                {canManage && (
+                                    <button onClick={() => setIsEditing(true)} className="flex-1 h-12 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-primaryHover transition-all shadow-xl shadow-primary/20">
+                                        <Edit3 size={14} /> Edit Module
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ) : (
@@ -145,6 +148,7 @@ function IndividualDepartmentView({
     vertical, 
     modules, 
     users, 
+    userRole,
     onBack, 
     onRefresh, 
     onSelectModule 
@@ -152,10 +156,12 @@ function IndividualDepartmentView({
     vertical: any, 
     modules: any[], 
     users: any[], 
+    userRole: string,
     onBack: () => void, 
     onRefresh: () => void, 
     onSelectModule: (m: any) => void 
 }) {
+    const canManage = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
     const [search, setSearch] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [newCode, setNewCode] = useState('');
@@ -227,12 +233,14 @@ function IndividualDepartmentView({
                 </button>
 
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => setShowAddModal(true)}
-                        className="h-11 px-5 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center gap-2 shadow-xl shadow-primary/20 shrink-0"
-                    >
-                        <Plus size={16} /> New Module
-                    </button>
+                    {canManage && (
+                        <button 
+                            onClick={() => setShowAddModal(true)}
+                            className="h-11 px-5 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primaryHover transition-all flex items-center gap-2 shadow-xl shadow-primary/20 shrink-0"
+                        >
+                            <Plus size={16} /> New Module
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -306,13 +314,15 @@ function IndividualDepartmentView({
                                         <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-xl text-xs font-mono font-black tracking-wider group-hover:bg-primary group-hover:text-white transition-colors">
                                             {m.code}
                                         </span>
-                                        <button 
-                                            onClick={(e) => handleDelete(m.id, e)} 
-                                            className="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center opacity-70 group-hover:opacity-100"
-                                            title="Delete Module"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
+                                        {canManage && (
+                                            <button 
+                                                onClick={(e) => handleDelete(m.id, e)} 
+                                                className="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center opacity-70 group-hover:opacity-100"
+                                                title="Delete Module"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
                                     </div>
 
                                     <h3 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-2 leading-tight">
@@ -460,6 +470,8 @@ export default function ModulesPage() {
     const [search, setSearch] = useState('');
     const [selectedModule, setSelectedModule] = useState<any>(null);
     const [activeVertical, setActiveVertical] = useState<any>(null);
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    const userRole: string = user.role || '';
 
     const fetchData = async () => {
         setFetching(true);
@@ -514,6 +526,7 @@ export default function ModulesPage() {
                 <ModuleModal 
                     module={selectedModule}
                     users={users} 
+                    userRole={userRole}
                     onClose={() => setSelectedModule(null)} 
                     onRefresh={fetchData} 
                 />
@@ -525,6 +538,7 @@ export default function ModulesPage() {
                     vertical={activeVertical}
                     modules={modules}
                     users={users}
+                    userRole={userRole}
                     onBack={() => setActiveVertical(null)}
                     onRefresh={fetchData}
                     onSelectModule={setSelectedModule}

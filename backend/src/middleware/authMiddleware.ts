@@ -38,3 +38,15 @@ export const requireGlobalAdmin = (req: AuthRequest, res: Response, next: NextFu
         res.status(403).json({ success: false, message: 'Permission Denied - Global Admins Only' });
     }
 };
+
+// ==========================================
+// Middleware: Global Admin, Admin, or Co-Admin
+// ==========================================
+export const requireAdminOrCoAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const allowedRoles = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'];
+    if (req.user && allowedRoles.includes(req.user.role)) {
+        next();
+    } else {
+        res.status(403).json({ success: false, message: 'Permission Denied - Admins and Co-Admins Only' });
+    }
+};

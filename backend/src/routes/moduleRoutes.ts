@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { getModules, createModule, updateModule, deleteModule } from '../controllers/moduleController';
-import { protect, requireGlobalAdmin } from '../middleware/authMiddleware';
+import { protect, requireAdminOrCoAdmin } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.get('/', protect, getModules);
-router.post('/', protect, requireGlobalAdmin, createModule);
-router.put('/:id', protect, requireGlobalAdmin, updateModule);
-router.delete('/:id', protect, requireGlobalAdmin, deleteModule);
+router.post('/', protect, requireAdminOrCoAdmin, createModule);
+router.put('/:id', protect, requireAdminOrCoAdmin, updateModule);
+router.delete('/:id', protect, requireAdminOrCoAdmin, deleteModule);
 
 export default router;
