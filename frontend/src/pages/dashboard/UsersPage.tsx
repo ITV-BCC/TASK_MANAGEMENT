@@ -436,9 +436,9 @@ export default function UsersPage() {
       </div>
 
       {/* CENTERED PAGINATION & CONTROLS (Below the Table) */}
-      <div className="mt-6 p-4 md:p-5 bg-surface border border-border/80 rounded-2xl md:rounded-3xl shadow-xl flex flex-col lg:flex-row items-center justify-between gap-4">
-          {/* Left: Rows Per Page Selector & Summary */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 font-bold flex-wrap justify-center sm:justify-start">
+      <div className="mt-6 p-4 md:p-5 bg-surface border border-border/80 rounded-2xl md:rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Left: Rows Per Page Selector */}
+          <div className="flex items-center gap-2 text-xs text-gray-500 font-bold justify-center md:justify-start w-full md:w-auto">
               <span>Rows per page:</span>
               <select
                   value={pagination.limit}
@@ -447,7 +447,7 @@ export default function UsersPage() {
                       setPagination(prev => ({ ...prev, limit: newLimit }));
                       fetchData(1, newLimit);
                   }}
-                  className="bg-background border border-border text-gray-900 dark:text-white rounded-xl px-3 py-1.5 outline-none focus:border-primary text-xs font-bold shadow-inner cursor-pointer"
+                  className="bg-background border border-border text-gray-900 dark:text-white rounded-xl px-2.5 py-1.5 outline-none focus:border-primary text-xs font-bold shadow-inner cursor-pointer"
               >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
@@ -455,13 +455,9 @@ export default function UsersPage() {
                   <option value={50}>50</option>
                   <option value={100}>100</option>
               </select>
-              <span className="text-[11px] text-gray-400 hidden sm:inline">•</span>
-              <span className="text-[11px] text-gray-500 hidden sm:inline">
-                  Showing <strong className="text-gray-900 dark:text-white">{pagination.total === 0 ? 0 : ((pagination.page - 1) * pagination.limit) + 1}</strong> to <strong className="text-gray-900 dark:text-white">{Math.min(pagination.page * pagination.limit, pagination.total)}</strong> of <strong className="text-gray-900 dark:text-white">{pagination.total}</strong> entries
-              </span>
           </div>
 
-          {/* Center & Right: Rich Numbered Pagination */}
+          {/* Center: Prev, Next & Numbered Page Navigation (DEAD CENTER) */}
           <div className="flex items-center gap-1.5 flex-wrap justify-center">
               {/* First Page Button */}
               <button
@@ -477,11 +473,11 @@ export default function UsersPage() {
               <button
                   onClick={() => fetchData(pagination.page - 1, pagination.limit)}
                   disabled={pagination.page <= 1}
-                  className="p-2 h-9 px-3 flex items-center gap-1 rounded-xl bg-background border border-border text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  className="p-2 h-9 px-3 flex items-center gap-1.5 rounded-xl bg-background border border-border text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
                   title="Previous Page"
               >
                   <ChevronLeft size={14} />
-                  <span className="hidden sm:inline">Prev</span>
+                  <span>Prev</span>
               </button>
 
               {/* Numbered Pills */}
@@ -511,10 +507,10 @@ export default function UsersPage() {
               <button
                   onClick={() => fetchData(pagination.page + 1, pagination.limit)}
                   disabled={pagination.page >= pagination.pages}
-                  className="p-2 h-9 px-3 flex items-center gap-1 rounded-xl bg-background border border-border text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  className="p-2 h-9 px-3 flex items-center gap-1.5 rounded-xl bg-background border border-border text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
                   title="Next Page"
               >
-                  <span className="hidden sm:inline">Next</span>
+                  <span>Next</span>
                   <ChevronRight size={14} />
               </button>
 
@@ -527,6 +523,13 @@ export default function UsersPage() {
               >
                   <ChevronsRight size={15} />
               </button>
+          </div>
+
+          {/* Right: Showing Entry Summary */}
+          <div className="text-xs text-gray-500 font-bold text-center md:text-right w-full md:w-auto">
+              <span>
+                  Showing <strong className="text-gray-900 dark:text-white">{pagination.total === 0 ? 0 : ((pagination.page - 1) * pagination.limit) + 1}</strong>–<strong className="text-gray-900 dark:text-white">{Math.min(pagination.page * pagination.limit, pagination.total)}</strong> of <strong className="text-gray-900 dark:text-white">{pagination.total}</strong> entries
+              </span>
           </div>
       </div>
 
