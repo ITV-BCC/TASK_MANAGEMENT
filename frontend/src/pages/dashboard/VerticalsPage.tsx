@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Building2, Trash2, Edit3, X, Check, Loader2 } from 'lucide-react';
 import api from '../../api';
+import { formatDate } from '../../utils/dateUtils';
 
 export default function VerticalsPage() {
   const [verticals, setVerticals] = useState<any[]>([]);
@@ -123,7 +124,7 @@ export default function VerticalsPage() {
                       ) : (
                           <div className="mt-4">
                             <h3 className="text-gray-900 dark:text-white font-bold text-base md:text-lg tracking-tight uppercase line-clamp-2">{v.name}</h3>
-                            <p className="text-[8px] md:text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1.5 opacity-60">Established: {new Date(v.created_at).toLocaleDateString()}</p>
+                            <p className="text-[8px] md:text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-1.5 opacity-60">Established: {formatDate(v.created_at)}</p>
                           </div>
                       )}
 

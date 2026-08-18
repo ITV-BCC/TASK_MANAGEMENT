@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, FolderTree, Trash2, X, Plus, Search, Calendar, User, Edit3, ArrowLeft, Building2, ChevronRight, Layers } from 'lucide-react';
 import api from '../../api';
+import { formatDate } from '../../utils/dateUtils';
 
 function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: any, users: any[], userRole: string, onClose: () => void, onRefresh: () => void }) {
     const canManage = ['GLOBAL_ADMIN', 'ADMIN', 'CO_ADMIN'].includes(userRole);
@@ -36,7 +37,7 @@ function ModuleModal({ module, users, userRole, onClose, onRefresh }: { module: 
 
     const assignee = users.find(u => u.id === module.assignee_id);
     const assigneeName = assignee ? `${assignee.first_name} ${assignee.last_name}` : (module.assignee_first_name ? `${module.assignee_first_name} ${module.assignee_last_name}` : 'Unassigned');
-    const formattedDate = module.due_date ? new Date(module.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No Deadline';
+    const formattedDate = module.due_date ? formatDate(module.due_date) : 'No Deadline';
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
@@ -302,7 +303,7 @@ function IndividualDepartmentView({
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {vModules.map((m: any) => {
-                        const formattedDate = m.due_date ? new Date(m.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+                        const formattedDate = m.due_date ? formatDate(m.due_date) : null;
                         return (
                             <div 
                                 key={m.id}

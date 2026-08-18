@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree } from 'lucide-react';
 import api from '../../api';
 import * as XLSX from 'xlsx';
+import { formatDate, formatDateTime } from '../../utils/dateUtils';
 
 const priorityColors: Record<string, string> = {
   HIGH: 'bg-danger/20 text-danger border border-danger/30',
@@ -146,15 +147,15 @@ export default function TasksPage() {
         Priority: t.priority,
         Status: t.status,
         Department: t.vertical_name || 'Organization Wide',
-        'Due Date': t.due_date ? new Date(t.due_date).toLocaleDateString() : 'N/A',
-        'Created At': new Date(t.created_at).toLocaleString(),
+        'Due Date': t.due_date ? formatDate(t.due_date) : 'N/A',
+        'Created At': t.created_at ? formatDateTime(t.created_at) : 'N/A',
         'Last Remark': t.last_remark || ''
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Tasks");
-      XLSX.writeFile(wb, `TaskReport_${new Date().toLocaleDateString()}.xlsx`);
+      XLSX.writeFile(wb, `TaskReport_${formatDate(new Date()).replace(/\//g, '-')}.xlsx`);
     } catch (err) {
       console.error(err);
       alert('Failed to export data');
@@ -404,7 +405,7 @@ export default function TasksPage() {
                                   {task.due_date && (
                                      <div className="flex items-center gap-1.5">
                                          <Calendar size={12} className="text-gray-600" />
-                                         <span className="text-[10px] text-gray-500 font-black uppercase">Due {new Date(task.due_date).toLocaleDateString()}</span>
+                                         <span className="text-[10px] text-gray-500 font-black uppercase">Due {formatDate(task.due_date)}</span>
                                      </div>
                                   )}
                                   {task.assigned_users && task.assigned_users.length > 0 && (
@@ -775,7 +776,7 @@ export default function TasksPage() {
                        <span className="text-gray-900 dark:text-white text-xs font-bold uppercase tracking-tight">
                          {h.new_status.replace(/_/g, ' ')}
                        </span>
-                       <span className="text-[10px] text-gray-500 font-mono">{new Date(h.changed_at).toLocaleString()}</span>
+                       <span className="text-[10px] text-gray-500 font-mono">{formatDateTime(h.changed_at)}</span>
                      </div>
                      {h.remark && <p className="text-xs text-danger font-medium bg-danger/10 border border-danger/20 px-3 py-1.5 rounded-xl mt-2">"{h.remark}"</p>}
                      <p className="text-[10px] text-gray-500 mt-1 font-bold">Action by: <span className="text-primary">{h.first_name}</span></p>
