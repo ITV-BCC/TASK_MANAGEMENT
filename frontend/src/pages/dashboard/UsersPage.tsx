@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, UserMinus, Mail, Building2 } from 'lucide-react';
+import { Plus, Loader2, KeyRound, Power, Eye, EyeOff, Copy, Check, X, Edit2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, UserMinus, Mail, Building2 } from 'lucide-react';
 import api from '../../api';
 
 const ROLES = ['ADMIN', 'CO_ADMIN', 'EMPLOYEE'];
@@ -159,11 +159,11 @@ export default function UsersPage() {
     setShowTaskForm(true);
   };
 
-  const fetchData = async (page = pagination.page) => {
+  const fetchData = async (page = pagination.page, limit = pagination.limit) => {
     setFetching(true);
     try {
       const [uRes, vRes, meRes] = await Promise.all([
-          api.get(`/users?page=${page}&limit=${pagination.limit}&search=${search}`), 
+          api.get(`/users?page=${page}&limit=${limit}&search=${search}`), 
           api.get('/verticals').catch(() => ({ data: { verticals: [] } })),
           api.get('/auth/me').catch(() => ({ data: { user: null } }))
       ]);
@@ -182,9 +182,28 @@ export default function UsersPage() {
   };
 
   useEffect(() => { 
-    const timer = setTimeout(() => { fetchData(1); }, 300);
+    const timer = setTimeout(() => { fetchData(1, pagination.limit); }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const renderPageNumbers = () => {
+    const totalPages = pagination.pages || 1;
+    const currentPage = pagination.page || 1;
+    const pages: (number | string)[] = [];
+
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -220,25 +239,22 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Constraints Bar */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-8">
-          <div className="flex bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl gap-2 items-center w-full lg:w-auto lg:flex-1 lg:max-w-xl">
-              <Search size={16} className="text-gray-400 ml-4 shrink-0" />
+      {/* Search Bar (Clean and Wide) */}
+      <div className="flex items-center gap-4 mb-6">
+          <div className="flex bg-surface border border-border/80 p-2 rounded-2xl gap-3 items-center w-full max-w-2xl shadow-sm focus-within:border-primary transition-all">
+              <Search size={18} className="text-primary ml-3 shrink-0" />
               <input 
                 type="text" 
                 placeholder="Search personnel by name, email, or department..."
-                className="bg-transparent border-none text-[11px] md:text-xs text-gray-900 dark:text-white px-2 md:px-4 py-2 outline-none flex-1 placeholder:text-gray-400"
+                className="bg-transparent border-none text-xs md:text-sm text-gray-900 dark:text-white px-2 py-1 outline-none flex-1 placeholder:text-gray-400"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-          </div>
-
-          <div className="flex items-center gap-3 bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl w-full sm:w-auto justify-center">
-             <button onClick={() => fetchData(pagination.page - 1)} disabled={pagination.page <= 1} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-all"><ChevronLeft size={18}/></button>
-             <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 px-2 uppercase tracking-widest">
-               Entry {pagination.total === 0 ? '0' : ((pagination.page-1)*10)+1}-{Math.min(pagination.page*10, pagination.total)} of {pagination.total}
-             </span>
-             <button onClick={() => fetchData(pagination.page + 1)} disabled={pagination.page >= pagination.pages} className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-all"><ChevronRight size={18}/></button>
+              {search && (
+                <button onClick={() => setSearch('')} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white mr-2">
+                  <X size={14} />
+                </button>
+              )}
           </div>
       </div>
 
@@ -275,8 +291,8 @@ export default function UsersPage() {
         ) : (
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border/60 bg-background/50 text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <thead className="bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 border-b-2 border-primary/20">
+                <tr className="text-[10.5px] font-black uppercase tracking-widest text-primary">
                   <th className="py-4 px-4 w-12 text-center">
                     <input
                       type="checkbox"
@@ -288,13 +304,13 @@ export default function UsersPage() {
                       className="w-4 h-4 cursor-pointer accent-primary rounded"
                     />
                   </th>
-                  <th className="py-4 px-3 w-10 text-center text-gray-400">#</th>
-                  <th className="py-4 px-4 min-w-[200px]">Team Member</th>
-                  <th className="py-4 px-4 min-w-[220px]">Email Address</th>
-                  <th className="py-4 px-4 min-w-[130px]">Role</th>
-                  <th className="py-4 px-4 min-w-[180px]">Department</th>
-                  <th className="py-4 px-4 text-center min-w-[110px]">Status</th>
-                  <th className="py-4 px-6 text-right min-w-[150px]">Actions</th>
+                  <th className="py-4 px-3 w-10 text-center text-primary/80">#</th>
+                  <th className="py-4 px-4 min-w-[200px] text-primary">Team Member</th>
+                  <th className="py-4 px-4 min-w-[220px] text-primary">Email Address</th>
+                  <th className="py-4 px-4 min-w-[130px] text-primary">Role</th>
+                  <th className="py-4 px-4 min-w-[180px] text-primary">Department</th>
+                  <th className="py-4 px-4 text-center min-w-[110px] text-primary">Status</th>
+                  <th className="py-4 px-6 text-right min-w-[150px] text-primary">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 text-xs">
@@ -417,6 +433,101 @@ export default function UsersPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* CENTERED PAGINATION & CONTROLS (Below the Table) */}
+      <div className="mt-6 p-4 md:p-5 bg-surface border border-border/80 rounded-2xl md:rounded-3xl shadow-xl flex flex-col lg:flex-row items-center justify-between gap-4">
+          {/* Left: Rows Per Page Selector & Summary */}
+          <div className="flex items-center gap-3 text-xs text-gray-500 font-bold flex-wrap justify-center sm:justify-start">
+              <span>Rows per page:</span>
+              <select
+                  value={pagination.limit}
+                  onChange={(e) => {
+                      const newLimit = Number(e.target.value);
+                      setPagination(prev => ({ ...prev, limit: newLimit }));
+                      fetchData(1, newLimit);
+                  }}
+                  className="bg-background border border-border text-gray-900 dark:text-white rounded-xl px-3 py-1.5 outline-none focus:border-primary text-xs font-bold shadow-inner cursor-pointer"
+              >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+              </select>
+              <span className="text-[11px] text-gray-400 hidden sm:inline">•</span>
+              <span className="text-[11px] text-gray-500 hidden sm:inline">
+                  Showing <strong className="text-gray-900 dark:text-white">{pagination.total === 0 ? 0 : ((pagination.page - 1) * pagination.limit) + 1}</strong> to <strong className="text-gray-900 dark:text-white">{Math.min(pagination.page * pagination.limit, pagination.total)}</strong> of <strong className="text-gray-900 dark:text-white">{pagination.total}</strong> entries
+              </span>
+          </div>
+
+          {/* Center & Right: Rich Numbered Pagination */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              {/* First Page Button */}
+              <button
+                  onClick={() => fetchData(1, pagination.limit)}
+                  disabled={pagination.page <= 1}
+                  className="p-2 h-9 w-9 flex items-center justify-center rounded-xl bg-background border border-border text-gray-500 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="First Page"
+              >
+                  <ChevronsLeft size={15} />
+              </button>
+
+              {/* Previous Page Button */}
+              <button
+                  onClick={() => fetchData(pagination.page - 1, pagination.limit)}
+                  disabled={pagination.page <= 1}
+                  className="p-2 h-9 px-3 flex items-center gap-1 rounded-xl bg-background border border-border text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="Previous Page"
+              >
+                  <ChevronLeft size={14} />
+                  <span className="hidden sm:inline">Prev</span>
+              </button>
+
+              {/* Numbered Pills */}
+              <div className="flex items-center gap-1 px-1">
+                  {renderPageNumbers().map((p, idx) => {
+                      if (p === '...') {
+                          return <span key={`dots-${idx}`} className="px-2 text-xs font-bold text-gray-400">...</span>;
+                      }
+                      const isCurrent = p === pagination.page;
+                      return (
+                          <button
+                              key={`page-${p}`}
+                              onClick={() => fetchData(Number(p), pagination.limit)}
+                              className={`h-9 min-w-[36px] px-2.5 rounded-xl text-xs font-black transition-all shadow-sm ${
+                                  isCurrent
+                                      ? 'bg-primary text-white shadow-primary/25 ring-2 ring-primary/20 scale-105'
+                                      : 'bg-background border border-border text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5'
+                              }`}
+                          >
+                              {p}
+                          </button>
+                      );
+                  })}
+              </div>
+
+              {/* Next Page Button */}
+              <button
+                  onClick={() => fetchData(pagination.page + 1, pagination.limit)}
+                  disabled={pagination.page >= pagination.pages}
+                  className="p-2 h-9 px-3 flex items-center gap-1 rounded-xl bg-background border border-border text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="Next Page"
+              >
+                  <span className="hidden sm:inline">Next</span>
+                  <ChevronRight size={14} />
+              </button>
+
+              {/* Last Page Button */}
+              <button
+                  onClick={() => fetchData(pagination.pages, pagination.limit)}
+                  disabled={pagination.page >= pagination.pages}
+                  className="p-2 h-9 w-9 flex items-center justify-center rounded-xl bg-background border border-border text-gray-500 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="Last Page"
+              >
+                  <ChevronsRight size={15} />
+              </button>
+          </div>
       </div>
 
       {/* Slide-in Registration Panel */}
