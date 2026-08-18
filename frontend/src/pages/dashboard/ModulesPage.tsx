@@ -569,7 +569,7 @@ export default function ModulesPage() {
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="w-full h-14 pl-12 pr-6 bg-surface border border-border rounded-2xl text-gray-900 dark:text-white outline-none focus:border-primary transition-all text-xs shadow-2xl"
                             />
-                            <Search size={18} className="absolute left-4 top-4.5 text-gray-500" />
+                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
                     </div>
 
