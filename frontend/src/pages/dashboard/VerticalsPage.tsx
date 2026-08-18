@@ -12,7 +12,12 @@ export default function VerticalsPage() {
   const fetchVerticals = async () => {
     try {
       const res = await api.get('/verticals');
-      setVerticals(res.data.verticals);
+      const fetched = res.data.verticals || [];
+      // Sort chronologically (oldest first, new departments appended at the end)
+      const sorted = [...fetched].sort((a: any, b: any) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      setVerticals(sorted);
     } catch (err) {
       console.error(err);
     } finally {

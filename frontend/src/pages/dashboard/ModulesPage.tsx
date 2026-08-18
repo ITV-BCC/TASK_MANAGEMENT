@@ -481,7 +481,9 @@ export default function ModulesPage() {
                 api.get('/modules'),
                 api.get('/users?limit=1000')
             ]);
-            const fetchedVerticals = vRes.data.verticals || [];
+            const fetchedVerticals = (vRes.data.verticals || []).sort((a: any, b: any) => 
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
             const fetchedModules = mRes.data.modules || [];
             const fetchedUsers = uRes.data.users || [];
 
