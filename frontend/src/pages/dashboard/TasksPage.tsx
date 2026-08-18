@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Target, Search, ChevronLeft, ChevronRight, FolderTree, AlertCircle, CheckCircle2, UserCheck, UserX, Building2, Sparkles } from 'lucide-react';
+import { Plus, Loader2, UserPlus, CheckCircle, RotateCcw, X, History, Paperclip, Download, Trash2, Upload, MessageSquare, Send, FileSpreadsheet, Calendar, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FolderTree, AlertCircle, CheckCircle2, UserCheck, UserX, Building2, Sparkles, Play } from 'lucide-react';
 import api from '../../api';
 import * as XLSX from 'xlsx';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
@@ -10,12 +10,12 @@ const priorityColors: Record<string, string> = {
   LOW: 'bg-secondary/20 text-secondary border border-secondary/30',
 };
 const statusColors: Record<string, string> = {
-  CREATED: 'bg-gray-400/20 text-gray-400',
-  ASSIGNED: 'bg-blue-400/20 text-blue-400',
-  IN_PROGRESS: 'bg-yellow-400/20 text-yellow-400',
-  COMPLETED: 'bg-secondary/20 text-secondary',
-  REVIEWED: 'bg-primary/20 text-primary',
-  REWORK: 'bg-danger/20 text-danger',
+  CREATED: 'bg-gray-400/20 text-gray-400 border border-gray-400/30',
+  ASSIGNED: 'bg-blue-400/20 text-blue-400 border border-blue-400/30',
+  IN_PROGRESS: 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/30',
+  COMPLETED: 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30',
+  REVIEWED: 'bg-primary/20 text-primary border border-primary/30',
+  REWORK: 'bg-danger/20 text-danger border border-danger/30',
 };
 
 export default function TasksPage() {
@@ -29,6 +29,7 @@ export default function TasksPage() {
   const [filtPriority, setFiltPriority] = useState('ALL');
   const [sortBy, setSortBy] = useState('newest');
   const [exporting, setExporting] = useState(false);
+  const [jumpPage, setJumpPage] = useState('');
   
   const [historyModal, setHistoryModal] = useState<{ open: boolean; task: any | null; data: any[] }>({ open: false, task: null, data: [] });
   const [reworkModal, setReworkModal] = useState<{ open: boolean; task: any | null; reason: string }>({ open: false, task: null, reason: '' });
@@ -53,25 +54,52 @@ export default function TasksPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const safeFetch = async (page = pagination.page) => {
+  const safeFetch = async (page = pagination.page, limit = pagination.limit) => {
     setFetching(true);
     try {
       const [tRes, vRes, uRes] = await Promise.all([
-        api.get(`/tasks?page=${page}&limit=${pagination.limit}&search=${search}&status=${filtStatus}&priority=${filtPriority}&sortBy=${sortBy}`).catch(() => ({ data: { tasks: [] } })),
+        api.get(`/tasks?page=${page}&limit=${limit}&search=${search}&status=${filtStatus}&priority=${filtPriority}&sortBy=${sortBy}`).catch(() => ({ data: { tasks: [] } })),
         api.get('/verticals').catch(() => ({ data: { verticals: [] } })),
         api.get('/users?limit=1000').catch(() => ({ data: { users: [] } }))
       ]);
       setTasks(tRes.data.tasks || []);
       if (tRes.data.pagination) setPagination(tRes.data.pagination);
       setVerticals(vRes.data.verticals || []);
-      setVerticals(vRes.data.verticals || []);
       setUsers(uRes.data.users || []);
       setSelectedTasks([]);
     } finally { setFetching(false); }
   };
 
+  const handleJumpPage = (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = parseInt(jumpPage);
+    if (!isNaN(p) && p >= 1 && p <= (pagination.pages || 1)) {
+      safeFetch(p, pagination.limit);
+      setJumpPage('');
+    }
+  };
+
+  const renderPageNumbers = () => {
+    const totalPages = pagination.pages || 1;
+    const currentPage = pagination.page || 1;
+    const pages: (number | string)[] = [];
+
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
+
   useEffect(() => { 
-    const timer = setTimeout(() => { safeFetch(1); }, 300);
+    const timer = setTimeout(() => { safeFetch(1, pagination.limit); }, 300);
     return () => clearTimeout(timer);
   }, [search, filtStatus, filtPriority, sortBy]);
 
@@ -291,25 +319,30 @@ export default function TasksPage() {
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 mb-6">
           {/* Left search & filters */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 lg:max-w-4xl">
-              <div className="flex bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl gap-2 items-center flex-1">
-                  <Search size={16} className="text-gray-600 ml-3" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+              <div className="flex bg-surface border border-border/80 p-2 rounded-2xl gap-3 items-center flex-1 max-w-md shadow-sm focus-within:border-primary transition-all">
+                  <Search size={18} className="text-primary ml-3 shrink-0" />
                   <input 
                     type="text" 
-                    placeholder="Search Objectives..." 
-                    className="bg-transparent border-none text-[10px] md:text-xs text-white px-3 py-2 outline-none flex-1"
+                    placeholder="Search tasks, descriptions, or assignees..." 
+                    className="bg-transparent border-none text-xs md:text-sm text-gray-900 dark:text-white px-2 py-1 outline-none flex-1 placeholder:text-gray-400"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
+                  {search && (
+                    <button onClick={() => setSearch('')} className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white mr-2">
+                      <X size={14} />
+                    </button>
+                  )}
               </div>
               
               <div className="flex flex-wrap gap-2">
                   <select 
                     value={filtStatus} 
                     onChange={e => setFiltStatus(e.target.value)} 
-                    className="bg-surface border border-border text-[9px] md:text-[10px] text-gray-400 px-4 py-3 rounded-xl md:rounded-2xl font-black uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer min-w-[120px]"
+                    className="bg-surface border border-border/80 text-[10px] md:text-xs text-gray-900 dark:text-white px-3.5 py-2.5 rounded-xl font-bold uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer shadow-sm"
                   >
                      <option value="ALL">All Statuses</option>
                      <option value="CREATED">Created</option>
@@ -323,7 +356,7 @@ export default function TasksPage() {
                   <select 
                     value={filtPriority} 
                     onChange={e => setFiltPriority(e.target.value)} 
-                    className="bg-surface border border-border text-[9px] md:text-[10px] text-gray-400 px-4 py-3 rounded-xl md:rounded-2xl font-black uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer min-w-[125px]"
+                    className="bg-surface border border-border/80 text-[10px] md:text-xs text-gray-900 dark:text-white px-3.5 py-2.5 rounded-xl font-bold uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer shadow-sm"
                   >
                      <option value="ALL">All Priorities</option>
                      <option value="HIGH">High Criticality</option>
@@ -334,7 +367,7 @@ export default function TasksPage() {
                   <select 
                     value={sortBy} 
                     onChange={e => setSortBy(e.target.value)} 
-                    className="bg-surface border border-border text-[9px] md:text-[10px] text-gray-400 px-4 py-3 rounded-xl md:rounded-2xl font-black uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer min-w-[115px]"
+                    className="bg-surface border border-border/80 text-[10px] md:text-xs text-gray-900 dark:text-white px-3.5 py-2.5 rounded-xl font-bold uppercase tracking-wider outline-none focus:border-primary transition-all cursor-pointer shadow-sm"
                   >
                      <option value="newest">Newest First</option>
                      <option value="oldest">Oldest First</option>
@@ -343,23 +376,16 @@ export default function TasksPage() {
                   </select>
               </div>
           </div>
-
-          {/* Mini Pagination */}
-          <div className="flex items-center gap-3 bg-surface border border-border p-1.5 rounded-xl md:rounded-2xl self-center sm:self-auto justify-center">
-             <button onClick={() => safeFetch(pagination.page - 1)} disabled={pagination.page <= 1} className="p-2 text-gray-500 hover:text-white disabled:opacity-30"><ChevronLeft size={18}/></button>
-             <span className="text-[10px] font-black text-gray-400 px-2 uppercase tracking-widest">Page {pagination.page} / {pagination.pages}</span>
-             <button onClick={() => safeFetch(pagination.page + 1)} disabled={pagination.page >= pagination.pages} className="p-2 text-gray-500 hover:text-white disabled:opacity-30"><ChevronRight size={18}/></button>
-          </div>
       </div>
 
       {selectedTasks.length > 0 && (
-          <div className="bg-primary/20 border border-primary/40 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4">
+          <div className="bg-primary/15 border border-primary/30 p-4 rounded-2xl mb-6 flex items-center justify-between shadow-2xl flex-wrap gap-4 animate-in fade-in duration-150">
               <div className="flex items-center gap-4">
-                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-white ml-2">{selectedTasks.length} Elements Selected</span>
-                  <button onClick={() => setSelectedTasks([])} className="text-gray-400 hover:text-white text-[9px] font-bold uppercase tracking-widest underline decoration-gray-600 underline-offset-4">Clear All</button>
+                  <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white ml-2">{selectedTasks.length} Tasks Selected</span>
+                  <button onClick={() => setSelectedTasks([])} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white text-[9px] font-bold uppercase tracking-widest underline underline-offset-4">Clear All</button>
               </div>
               <div className="flex gap-2">
-                  <button onClick={() => setAssignModal({ open: true, task: { id: 'BULK_ASSIGN' } })} className="bg-background text-primary px-4 h-11 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-surface border border-primary/20 transition-all flex items-center gap-2"><UserPlus size={16}/> Assign Resources</button>
+                  <button onClick={() => setAssignModal({ open: true, task: { id: 'BULK_ASSIGN' } })} className="bg-primary text-white px-4 h-10 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-primaryHover transition-all flex items-center gap-2 shadow-sm"><UserPlus size={15}/> Assign Resources</button>
                   <button onClick={async () => {
                       if (!confirm(`Are you sure you want to delete ${selectedTasks.length} tasks globally?`)) return;
                       try {
@@ -367,126 +393,386 @@ export default function TasksPage() {
                           setSelectedTasks([]);
                           safeFetch();
                       } catch (err) { alert('Bulk Deletion Failed'); }
-                  }} className="bg-danger/20 text-danger px-4 h-11 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-danger hover:text-white transition-all flex items-center gap-2"><Trash2 size={16}/> Wipe Selection</button>
+                  }} className="bg-danger/20 text-danger px-4 h-10 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-danger hover:text-white transition-all flex items-center gap-2 shadow-sm"><Trash2 size={15}/> Wipe Selection</button>
               </div>
           </div>
       )}
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* DATA TABLE VIEW */}
+      <div className="bg-surface border border-border/80 rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
         {fetching ? (
-            <div className="py-24 text-center text-gray-600 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
+            <div className="py-24 text-center text-gray-500 font-bold uppercase tracking-widest text-[10px] flex flex-col items-center justify-center gap-4">
                 <Loader2 size={32} className="text-primary animate-spin" />
-                <span>Establishing Connection...</span>
+                <span>Syncing Tasks Database...</span>
             </div>
         ) : tasks.length === 0 ? (
-            <div className="py-32 text-center text-gray-700 font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-border rounded-[2rem] md:rounded-[3rem]">No Active Vectors Detected</div>
-        ) : tasks.map((task, i) => (
-            <div key={task.id} className="bg-surface border border-border rounded-2xl md:rounded-3xl flex flex-col md:flex-row hover:border-primary/20 transition-all group overflow-hidden relative shadow-2xl">
-                
-                {/* Checkbox and S.No Panel */}
-                <div className="w-full md:w-16 bg-background/50 border-b md:border-b-0 md:border-r border-border flex md:flex-col items-center justify-between md:justify-center p-4 md:py-8 shrink-0">
-                    <span className="text-gray-500 font-black text-[10px] uppercase tracking-widest mb-0 md:mb-4">{(pagination.page - 1) * pagination.limit + i + 1}</span>
-                    <input 
-                        type="checkbox" 
-                        checked={selectedTasks.includes(task.id)}
-                        onChange={() => setSelectedTasks(prev => prev.includes(task.id) ? prev.filter(tid => tid !== task.id) : [...prev, task.id])}
-                        className="w-5 h-5 cursor-pointer accent-primary border border-border bg-background rounded"
-                    />
-                </div>
-
-                {/* Task Body */}
-                <div className="flex-1 p-5 md:p-7 flex flex-col md:flex-row gap-6 md:gap-8">
-                    <div className="flex-1">
-                        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                            <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                 <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${priorityColors[task.priority]}`}>{task.priority}</span>
-                                 <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${statusColors[task.status]} border border-white/5`}>{task.status.replace('_', ' ')}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <h3 className="text-lg md:text-xl font-bold text-white tracking-tight">{task.title}</h3>
-                            </div>
-                            <p className="text-gray-500 text-sm mt-2 leading-relaxed max-w-2xl">{task.description}</p>
-                            
-                            {/* Metadata Row */}
-                             <div className="flex flex-wrap items-center gap-y-2 gap-x-6 mt-4">
-                                  <div className="flex items-center gap-1.5 font-bold">
-                                     <Target size={12} className="text-gray-600" />
-                                     <span className="text-[10px] text-gray-500 font-black uppercase">{task.vertical_name || 'System Wide'}</span>
-                                  </div>
-                                  {task.module_code && (
-                                     <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
-                                         <FolderTree size={11} className="text-primary/70" />
-                                         <span className="text-[10px] text-primary font-black uppercase tracking-widest">{task.module_code} · {task.module_name}</span>
-                                     </div>
-                                  )}
-                                  {task.due_date && (
-                                     <div className="flex items-center gap-1.5">
-                                         <Calendar size={12} className="text-gray-600" />
-                                         <span className="text-[10px] text-gray-500 font-black uppercase">Due {formatDate(task.due_date)}</span>
-                                     </div>
-                                  )}
-                                  {task.assigned_users && task.assigned_users.length > 0 && (
-                                     <div className="flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
-                                         <div className="flex -space-x-1.5 overflow-hidden mr-1">
-                                             {task.assigned_users.map((u: any) => (
-                                                 <div key={u.id} className="w-5 h-5 rounded-full bg-primary/20 text-primary border border-surface flex items-center justify-center text-[8px] font-black uppercase" title={`${u.first_name} ${u.last_name || ''}`}>
-                                                     {u.first_name[0]}
-                                                 </div>
-                                             ))}
-                                         </div>
-                                         <span className="text-[9px] text-primary/80 font-black uppercase tracking-wider">
-                                             Assigned: {task.assigned_users.map((u: any) => u.first_name).join(', ')}
-                                         </span>
-                                     </div>
-                                  )}
-                            </div>
-                        </div>
-
-                        {/* Quick Actions Bar */}
-                        <div className="flex md:flex-col gap-1.5 bg-background/50 md:bg-transparent p-2 md:p-0 rounded-xl w-full sm:w-auto justify-around sm:justify-start">
-                            <button onClick={() => openChat(task)} className="p-2.5 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-xl transition-all" title="Comments"><MessageSquare size={18} /></button>
-                            <button onClick={() => openAttachments(task)} className="p-2.5 text-gray-500 hover:text-secondary hover:bg-secondary/5 rounded-xl transition-all" title="Assets"><Paperclip size={18} /></button>
-                            <button onClick={() => {
-                                setHistoryModal({ open: true, task, data: [] });
-                                api.get(`/stats/task/${task.id}/history`).then(res => setHistoryModal({ open: true, task, data: res.data.history }));
-                            }} className="p-2.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all" title="Timeline"><History size={18} /></button>
-                        </div>
-                    </div>
-
-                    {task.last_remark && (
-                        <div className="mt-6 bg-danger/5 border-l-4 border-danger/50 p-4 rounded-r-2xl">
-                            <p className="text-[9px] text-danger font-black uppercase tracking-[0.2em] mb-1">Rework Instructions</p>
-                            <p className="text-xs text-danger/80 font-medium italic">"{task.last_remark}"</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Vertical Divider (Desktop Only) */}
-                <div className="hidden md:block w-px bg-border my-2 opacity-30"></div>
-
-                {/* Operations Section */}
-                <div className="md:w-64 flex flex-col justify-center gap-3">
-                    {user.role !== 'EMPLOYEE' && (
-                        <button onClick={() => setAssignModal({ open: true, task })} className="w-full h-12 md:h-14 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3"><UserPlus size={18}/> {task.status === 'CREATED' ? 'Assign Direct' : 'Reassign / Edit'}</button>
-                    )}
-                    {(user.role === 'EMPLOYEE' || user.role === 'CO_ADMIN') && (task.status === 'ASSIGNED' || task.status === 'REWORK') && (
-                        <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'IN_PROGRESS' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-yellow-400 text-black rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-yellow-300 transition-all shadow-xl shadow-yellow-400/20">Initiate Workflow</button>
-                    )}
-                    {(user.role === 'EMPLOYEE' || user.role === 'CO_ADMIN') && task.status === 'IN_PROGRESS' && (
-                        <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'COMPLETED' }).then(() => safeFetch())} className="w-full h-12 md:h-14 bg-secondary text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary/80 transition-all shadow-xl shadow-secondary/20">Finalize Work</button>
-                    )}
-                    {user.role !== 'EMPLOYEE' && user.role !== 'CO_ADMIN' && task.status === 'COMPLETED' && (
-                        <div className="flex flex-col gap-2">
-                             <button onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'REVIEWED' }).then(() => safeFetch())} className="h-12 bg-secondary/10 border border-secondary/30 text-secondary rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-secondary hover:text-white transition-all flex items-center justify-center gap-3"><CheckCircle size={18}/> Approve Asset</button>
-                             <button onClick={() => setReworkModal({ open: true, task, reason: '' })} className="h-12 bg-danger/10 border border-danger/30 text-danger rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-danger hover:text-white transition-all flex items-center justify-center gap-3"><RotateCcw size={18}/> Request Rework</button>
-                        </div>
-                    )}
-                </div>
-                </div>
+            <div className="py-28 text-center text-gray-500 font-black uppercase tracking-widest text-[10px]">
+                No Tasks Found in This Sector
             </div>
-        ))}
+        ) : (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-primary text-white shadow-md">
+                <tr className="text-[11px] font-black uppercase tracking-wider text-white">
+                  <th className="py-4 px-4 w-12 text-center text-white">
+                    <input
+                      type="checkbox"
+                      checked={tasks.length > 0 && selectedTasks.length === tasks.length}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedTasks(tasks.map(t => t.id));
+                        else setSelectedTasks([]);
+                      }}
+                      className="w-4 h-4 cursor-pointer accent-secondary rounded"
+                    />
+                  </th>
+                  <th className="py-4 px-3 w-10 text-center text-white/90">#</th>
+                  <th className="py-4 px-4 min-w-[240px] text-white">Task Objective</th>
+                  <th className="py-4 px-4 min-w-[170px] text-white">Department</th>
+                  <th className="py-4 px-4 min-w-[180px] text-white">Assigned To</th>
+                  <th className="py-4 px-4 min-w-[100px] text-white">Priority</th>
+                  <th className="py-4 px-4 min-w-[120px] text-white">Status</th>
+                  <th className="py-4 px-4 min-w-[110px] text-white">Due Date</th>
+                  <th className="py-4 px-4 text-center min-w-[120px] text-white">Tools</th>
+                  <th className="py-4 px-6 text-right min-w-[180px] text-white">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40 text-xs">
+                {tasks.map((task, idx) => {
+                  const isSelected = selectedTasks.includes(task.id);
+                  const sNo = (pagination.page - 1) * pagination.limit + idx + 1;
+                  return (
+                    <tr
+                      key={task.id}
+                      className={`transition-colors group hover:bg-primary/5 ${
+                        isSelected ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-4 px-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => setSelectedTasks(prev => prev.includes(task.id) ? prev.filter(tid => tid !== task.id) : [...prev, task.id])}
+                          className="w-4 h-4 cursor-pointer accent-primary rounded"
+                        />
+                      </td>
+
+                      {/* S.No */}
+                      <td className="py-4 px-3 text-center text-[10px] font-black text-gray-400">
+                        {sNo}
+                      </td>
+
+                      {/* Task Objective */}
+                      <td className="py-4 px-4">
+                        <div className="space-y-1 max-w-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                              {task.title}
+                            </span>
+                          </div>
+                          {task.description && (
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                              {task.description}
+                            </p>
+                          )}
+                          {task.last_remark && (
+                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-danger/10 text-danger border border-danger/20 rounded-md text-[9px] font-bold">
+                              <span>⚠️ Rework: "{task.last_remark}"</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Department & Module */}
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-background/80 border border-border/70 px-2.5 py-1 rounded-lg">
+                            <Building2 size={12} className="text-primary shrink-0" />
+                            <span className="truncate max-w-[140px]">{task.vertical_name || 'System Wide'}</span>
+                          </span>
+                          {task.module_code && (
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-primary/80 bg-primary/10 px-2 py-0.5 rounded">
+                                <FolderTree size={10} />
+                                <span className="truncate max-w-[130px]">{task.module_code} · {task.module_name}</span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Assigned To */}
+                      <td className="py-4 px-4">
+                        {task.assigned_users && task.assigned_users.length > 0 ? (
+                          <div 
+                            onClick={() => user.role !== 'EMPLOYEE' && setAssignModal({ open: true, task })}
+                            className={`flex items-center gap-2 ${user.role !== 'EMPLOYEE' ? 'cursor-pointer hover:opacity-80' : ''}`}
+                            title={user.role !== 'EMPLOYEE' ? 'Click to manage assignees' : undefined}
+                          >
+                            <div className="flex -space-x-2 overflow-hidden shrink-0">
+                              {task.assigned_users.map((u: any) => (
+                                <div key={u.id} className="w-6 h-6 rounded-full bg-primary text-white border-2 border-surface flex items-center justify-center text-[8px] font-black uppercase shadow-sm" title={`${u.first_name} ${u.last_name || ''}`}>
+                                  {u.first_name?.[0] || 'U'}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
+                              {task.assigned_users.map((u: any) => u.first_name).join(', ')}
+                            </span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => user.role !== 'EMPLOYEE' && setAssignModal({ open: true, task })}
+                            disabled={user.role === 'EMPLOYEE'}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-400 bg-background border border-dashed border-border hover:border-primary hover:text-primary transition-all disabled:pointer-events-none"
+                          >
+                            <UserPlus size={12} />
+                            <span>Unassigned</span>
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Priority */}
+                      <td className="py-4 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider inline-block ${priorityColors[task.priority] || 'bg-gray-500/20 text-gray-400'}`}>
+                          {task.priority}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-4 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${statusColors[task.status] || 'bg-gray-500/20 text-gray-400'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${task.status === 'IN_PROGRESS' || task.status === 'COMPLETED' ? 'animate-pulse' : ''} ${
+                            task.status === 'COMPLETED' || task.status === 'REVIEWED' ? 'bg-emerald-500' :
+                            task.status === 'IN_PROGRESS' ? 'bg-yellow-400' :
+                            task.status === 'REWORK' ? 'bg-danger' :
+                            task.status === 'ASSIGNED' ? 'bg-blue-400' : 'bg-gray-400'
+                          }`}></span>
+                          {task.status?.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+
+                      {/* Due Date */}
+                      <td className="py-4 px-4 text-gray-600 dark:text-gray-300 font-medium">
+                        {task.due_date ? (
+                          <div className="flex items-center gap-1.5 text-[11px]">
+                            <Calendar size={12} className="text-gray-400 shrink-0" />
+                            <span>{formatDate(task.due_date)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-[10px] italic">No due date</span>
+                        )}
+                      </td>
+
+                      {/* Quick Tools (Comments, Assets, Timeline) */}
+                      <td className="py-4 px-4 text-center">
+                        <div className="inline-flex items-center justify-center gap-1 bg-background/80 border border-border/80 p-1 rounded-xl shadow-sm">
+                          <button
+                            onClick={() => openChat(task)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-primary hover:bg-primary/10 transition-all relative"
+                            title="Discussion / Remarks"
+                          >
+                            <MessageSquare size={14} />
+                          </button>
+                          <button
+                            onClick={() => openAttachments(task)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all relative"
+                            title="Attachments / Files"
+                          >
+                            <Paperclip size={14} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setHistoryModal({ open: true, task, data: [] });
+                              api.get(`/stats/task/${task.id}/history`).then(res => setHistoryModal({ open: true, task, data: res.data.history }));
+                            }}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-500 hover:bg-blue-500/10 transition-all"
+                            title="Activity Log / History"
+                          >
+                            <History size={14} />
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Operations / Actions */}
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Admin / Co-Admin Reassign */}
+                          {user.role !== 'EMPLOYEE' && (
+                            <button
+                              onClick={() => setAssignModal({ open: true, task })}
+                              className="px-3 h-8 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl font-black uppercase tracking-wider text-[9px] transition-all flex items-center gap-1.5 shadow-sm"
+                              title="Assign or Reassign Task"
+                            >
+                              <UserPlus size={13} />
+                              <span>{task.status === 'CREATED' ? 'Assign' : 'Reassign'}</span>
+                            </button>
+                          )}
+
+                          {/* Employee / Co-admin Initiate Workflow */}
+                          {(user.role === 'EMPLOYEE' || user.role === 'CO_ADMIN') && (task.status === 'ASSIGNED' || task.status === 'REWORK') && (
+                            <button
+                              onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'IN_PROGRESS' }).then(() => safeFetch())}
+                              className="px-3 h-8 bg-yellow-400 text-black hover:bg-yellow-300 rounded-xl font-black uppercase tracking-wider text-[9px] transition-all flex items-center gap-1 shadow-sm"
+                              title="Start Work"
+                            >
+                              <Play size={12} className="fill-current" />
+                              <span>Start</span>
+                            </button>
+                          )}
+
+                          {/* Employee / Co-admin Complete Work */}
+                          {(user.role === 'EMPLOYEE' || user.role === 'CO_ADMIN') && task.status === 'IN_PROGRESS' && (
+                            <button
+                              onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'COMPLETED' }).then(() => safeFetch())}
+                              className="px-3 h-8 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-black uppercase tracking-wider text-[9px] transition-all flex items-center gap-1 shadow-sm"
+                              title="Complete Task"
+                            >
+                              <CheckCircle size={13} />
+                              <span>Complete</span>
+                            </button>
+                          )}
+
+                          {/* Admin Approve or Request Rework */}
+                          {user.role !== 'EMPLOYEE' && user.role !== 'CO_ADMIN' && task.status === 'COMPLETED' && (
+                            <>
+                              <button
+                                onClick={() => api.put(`/tasks/${task.id}/status`, { new_status: 'REVIEWED' }).then(() => safeFetch())}
+                                className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm"
+                                title="Approve Task"
+                              >
+                                <CheckCircle size={14} />
+                              </button>
+                              <button
+                                onClick={() => setReworkModal({ open: true, task, reason: '' })}
+                                className="p-2 bg-danger/10 border border-danger/20 text-danger hover:bg-danger hover:text-white rounded-xl transition-all shadow-sm"
+                                title="Request Rework"
+                              >
+                                <RotateCcw size={14} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* CENTERED PAGINATION & CONTROLS (Below the Table) */}
+      <div className="mt-6 p-4 md:p-5 bg-surface border border-border/80 rounded-2xl md:rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Left: Rows Per Page Selector */}
+          <div className="flex items-center gap-2 text-xs text-gray-500 font-bold justify-center md:justify-start w-full md:w-auto">
+              <span>Rows per page:</span>
+              <select
+                  value={pagination.limit}
+                  onChange={(e) => {
+                      const newLimit = Number(e.target.value);
+                      setPagination(prev => ({ ...prev, limit: newLimit }));
+                      safeFetch(1, newLimit);
+                  }}
+                  className="bg-background border border-border text-gray-900 dark:text-white rounded-xl px-2.5 py-1.5 outline-none focus:border-primary text-xs font-bold shadow-inner cursor-pointer"
+              >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+              </select>
+          </div>
+
+          {/* Center: Prev, Next & Numbered Page Navigation (DEAD CENTER) */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              {/* First Page Button */}
+              <button
+                  onClick={() => safeFetch(1, pagination.limit)}
+                  disabled={pagination.page <= 1}
+                  className="p-2 h-9 w-9 flex items-center justify-center rounded-xl bg-background border border-border text-gray-500 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="First Page"
+              >
+                  <ChevronsLeft size={15} />
+              </button>
+
+              {/* Previous Page Button */}
+              <button
+                  onClick={() => safeFetch(pagination.page - 1, pagination.limit)}
+                  disabled={pagination.page <= 1}
+                  className="p-2 h-9 px-3 flex items-center gap-1.5 rounded-xl bg-background border border-border text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="Previous Page"
+              >
+                  <ChevronLeft size={14} />
+                  <span>Prev</span>
+              </button>
+
+              {/* Numbered Pills */}
+              <div className="flex items-center gap-1 px-1">
+                  {renderPageNumbers().map((p, idx) => {
+                      if (p === '...') {
+                          return <span key={`dots-${idx}`} className="px-2 text-xs font-bold text-gray-400">...</span>;
+                      }
+                      const isCurrent = p === pagination.page;
+                      return (
+                          <button
+                              key={`page-${p}`}
+                              onClick={() => safeFetch(Number(p), pagination.limit)}
+                              className={`h-9 min-w-[36px] px-2.5 rounded-xl text-xs font-black transition-all shadow-sm ${
+                                  isCurrent
+                                      ? 'bg-primary text-white shadow-primary/25 ring-2 ring-primary/20 scale-105'
+                                      : 'bg-background border border-border text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 hover:bg-primary/5'
+                              }`}
+                          >
+                              {p}
+                          </button>
+                      );
+                  })}
+              </div>
+
+              {/* Next Page Button */}
+              <button
+                  onClick={() => safeFetch(pagination.page + 1, pagination.limit)}
+                  disabled={pagination.page >= pagination.pages}
+                  className="p-2 h-9 px-3 flex items-center gap-1.5 rounded-xl bg-background border border-border text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="Next Page"
+              >
+                  <span>Next</span>
+                  <ChevronRight size={14} />
+              </button>
+
+              {/* Last Page Button */}
+              <button
+                  onClick={() => safeFetch(pagination.pages, pagination.limit)}
+                  disabled={pagination.page >= pagination.pages}
+                  className="p-2 h-9 w-9 flex items-center justify-center rounded-xl bg-background border border-border text-gray-500 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+                  title="Last Page"
+              >
+                  <ChevronsRight size={15} />
+              </button>
+          </div>
+
+          {/* Right: Go to Page Text & Input Box */}
+          <form onSubmit={handleJumpPage} className="flex items-center gap-2 text-xs text-gray-500 font-bold justify-center md:justify-end w-full md:w-auto">
+              <span>Go to:</span>
+              <input
+                  type="number"
+                  min={1}
+                  max={pagination.pages || 1}
+                  value={jumpPage}
+                  onChange={(e) => setJumpPage(e.target.value)}
+                  placeholder={String(pagination.page)}
+                  className="w-14 h-9 bg-background border border-border text-gray-900 dark:text-white rounded-xl px-2 text-center text-xs font-black outline-none focus:border-primary shadow-inner"
+              />
+              <span className="text-[11px] text-gray-400">/ {pagination.pages || 1}</span>
+              <button
+                  type="submit"
+                  className="h-9 px-3 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm"
+              >
+                  Go
+              </button>
+          </form>
       </div>
 
       {/* NEW TASK MODAL */}
