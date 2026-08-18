@@ -181,3 +181,65 @@ option {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+/* MODERN ANIMATIONS & AMBIENT EFFECTS */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(12px) rotate(-1deg); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.06); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(25px, -35px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s ease-in-out infinite;
+}
+
+.animate-blob {
+  animation: blob 12s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.bg-grid-pattern {
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(75, 46, 131, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(75, 46, 131, 0.05) 1px, transparent 1px);
+}
+
+.dark .bg-grid-pattern {
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(134, 101, 216, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(134, 101, 216, 0.07) 1px, transparent 1px);
+}
+
