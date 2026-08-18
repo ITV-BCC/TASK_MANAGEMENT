@@ -1,89 +1,159 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* THEME SYSTEM CORE */
+/* =========================================================
+   BHARAT CAREER CONNECT BRAND DESIGN SYSTEM
+   Brand Palette:
+   - Primary: Deep Purple #4B2E83
+   - Secondary: Mint Green #B8D9C1 / Light Mint #CBEBC5
+   - Dark Neutral: Ink Blue #303259
+   - Base Neutral: Pure White #FFFFFF
+   Typography:
+   - Headings: Poppins (Bold, SemiBold, Medium, Regular)
+   - Body & Controls: Inter (Regular, Medium, SemiBold)
+   ========================================================= */
+
 :root {
-  --color-primary: #4F46E5;
-  --color-secondary: #0ea5e9;
-  --color-danger: #e11d48;
+  --color-primary: #4B2E83;
+  --color-primary-hover: #3B2368;
+  --color-secondary: #2D7252;
+  --color-secondary-light: #CBEBC5;
+  --color-mint: #B8D9C1;
+  --color-ink: #303259;
+  --color-danger: #E11D48;
 }
 
-/* ⚪️ LIGHT MODE - FULL OVERRIDE */
+/* ⚪️ LIGHT THEME */
 .light, :root {
-  --bg-main: #f1f5f9;
-  --bg-surface: #ffffff;
-  --bg-hover: #f8fafc;
-  --border-color: #e2e8f0;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
+  --theme-mode: light;
+  --color-primary: #4B2E83;
+  --color-primary-hover: #3B2368;
+  --color-secondary: #2D7252;
+  --color-secondary-light: #CBEBC5;
+  --color-mint: #B8D9C1;
+  --color-background: #F7F8FC;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F0F2F9;
+  --color-border: #E2E8F0;
+  --color-danger: #E11D48;
+
+  --bg-main: #F7F8FC;
+  --bg-surface: #FFFFFF;
+  --bg-hover: #F0F2F9;
+  --border-color: #E2E8F0;
+  --text-main: #303259; /* Ink Blue for high-contrast typography */
+  --text-muted: #686C8F;
 }
 
-/* ⚫️ DARK MODE - FULL OVERRIDE */
+/* ⚫️ DARK THEME */
 .dark {
-  --bg-main: #020617;
-  --bg-surface: #0f172a;
-  --bg-hover: #1e293b;
-  --border-color: #1e293b;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --theme-mode: dark;
+  --color-primary: #8665D8; /* High-contrast Deep Purple tint for dark mode */
+  --color-primary-hover: #987AE0;
+  --color-secondary: #B8D9C1; /* Mint Green */
+  --color-secondary-light: #CBEBC5;
+  --color-mint: #B8D9C1;
+  --color-background: #1C1E36;
+  --color-surface: #303259; /* Ink Blue surface */
+  --color-surface-hover: #3D406E;
+  --color-border: #464A7E;
+  --color-danger: #FB7185;
+
+  --bg-main: #1C1E36;
+  --bg-surface: #303259;
+  --bg-hover: #3D406E;
+  --border-color: #464A7E;
+  --text-main: #FFFFFF;
+  --text-muted: #B4B8D8;
 }
 
-/* FORCE COLORS REGARDLESS OF TAILWIND */
+/* BASE STYLING & TYPOGRAPHY */
 html, body {
   background-color: var(--bg-main) !important;
   color: var(--text-main) !important;
   font-family: 'Inter', sans-serif;
   margin: 0;
   padding: 0;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* APPLY TO ALL SURFACE ELEMENTS */
+/* HEADINGS & TITLES (MANDATORY: POPPINS) */
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+/* LIGHT MODE SURFACE & TEXT OVERRIDES */
 .light .bg-surface, 
 .light [class*="bg-surface"] {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
 }
 
 .light .bg-background,
 .light [class*="bg-background"] {
-  background-color: #f1f5f9 !important;
+  background-color: #F7F8FC !important;
 }
 
-.light .text-white,
-.light h1, .light h2, .light h3, .light h4 {
-  color: #0f172a !important;
+.light h1, .light h2, .light h3, .light h4, .light h5, .light h6 {
+  color: #303259 !important; /* Ink Blue */
+}
+
+.light .text-white {
+  color: #303259 !important;
+}
+
+/* Buttons with bg-primary retain white text */
+.light .bg-primary .text-white,
+.light button.bg-primary,
+.light a.bg-primary,
+.light [class*="bg-primary"] span.text-white,
+.light [class*="bg-primary"] .text-white {
+  color: #FFFFFF !important;
 }
 
 .light .text-gray-400, 
 .light .text-gray-500 {
-  color: #64748b !important;
+  color: #686C8F !important;
 }
 
 .light .border-border,
 .light .border-white\/5,
 .light .border-white\/10 {
-  border-color: #e2e8f0 !important;
+  border-color: #E2E8F0 !important;
 }
 
 /* DARK MODE RE-ENFORCEMENT */
 .dark .bg-surface {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
+  background-color: #303259 !important;
+  border-color: #464A7E !important;
 }
 
 .dark .bg-background {
-  background-color: #020617 !important;
+  background-color: #1C1E36 !important;
 }
 
-/* GLOBAL FORM THEME INPUT REGULATION */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #FFFFFF !important;
+}
+
+.dark .text-gray-400, 
+.dark .text-gray-500 {
+  color: #B4B8D8 !important;
+}
+
+.dark .border-border {
+  border-color: #464A7E !important;
+}
+
+/* GLOBAL FORM INPUTS */
 input, select, textarea {
   background-color: var(--bg-main) !important;
   color: var(--text-main) !important;
   border-color: var(--border-color) !important;
+  font-family: 'Inter', sans-serif;
   transition: border-color 0.2s, background-color 0.2s;
   color-scheme: var(--theme-mode, light);
 }
@@ -94,6 +164,7 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   border-color: var(--color-primary) !important;
+  outline: none;
 }
 
 input::placeholder, textarea::placeholder {
@@ -106,7 +177,7 @@ option {
   color: var(--text-main) !important;
 }
 
-/* Scrollbar tweaks */
-::-webkit-scrollbar { width: 6px; }
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
